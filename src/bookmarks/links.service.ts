@@ -17,11 +17,28 @@ export class LinksService {
     url: string,
     user: User,
     title?: string,
-  ): Promise<{ link: Link; isNew: boolean }> {
+  ): Promise<{ link: Link; isNew: boolean; restored: boolean }> {
     // Check if user already has this URL (case-insensitive, ignoring trailing slash)
     const existing = await this.findByUserAndUrl(user, url);
     if (existing) {
-      return { link: existing, isNew: false };
+      // If link exists and is marked as read, restore it (mark as unread)
+      if (existing.isRead) {
+        existing.isRead = false;
+
+        // Optionally update title if missing and we can fetch one now
+        if (!existing.title && !title) {
+          const fetchedTitle = await this.titleScraperService.fetchTitle(url);
+          if (fetchedTitle) {
+            existing.title = fetchedTitle;
+          }
+        }
+
+        const restoredLink = await this.linksRepository.save(existing);
+        return { link: restoredLink, isNew: false, restored: true };
+      }
+
+      // Link exists but is already unread - just return it
+      return { link: existing, isNew: false, restored: false };
     }
 
     // Fetch title if not provided
@@ -38,7 +55,7 @@ export class LinksService {
       isRead: false,
     });
     const savedLink = await this.linksRepository.save(link);
-    return { link: savedLink, isNew: true };
+    return { link: savedLink, isNew: true, restored: false };
   }
 
   async findByUserAndUrl(user: User, url: string): Promise<Link | null> {

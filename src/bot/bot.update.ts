@@ -24,7 +24,8 @@ export class BotUpdate {
         `Send me any link (Facebook post, article, etc.) and I'll save it.\n` +
         `I'll fetch the page title automatically for easier recognition.\n` +
         `I'll show the link ID with inline buttons to mark as read or delete.\n` +
-        `I'll send you daily reminders with buttons to check off links directly.\n\n` +
+        `I'll send you daily reminders with buttons to check off links directly.\n` +
+        `Send a previously read link again to restore it to your reminders.\n\n` +
         `Commands:\n` +
         `/list - Show your saved links\n` +
         `/read <id> - Mark a link as read\n` +
@@ -42,8 +43,9 @@ export class BotUpdate {
         `2. I'll fetch the page title automatically and save it with the link\n` +
         `3. I'll show you the link ID with buttons to mark as read or delete\n` +
         `4. I'll send you daily reminders with buttons to check off links directly\n` +
-        `5. Use /list to see all saved links with inline buttons\n` +
-        `6. Use /read <id> to mark a link as read (or click inline buttons)\n\n` +
+        `5. Send a previously read link again to restore it to your reminders\n` +
+        `6. Use /list to see all saved links with inline buttons\n` +
+        `7. Use /read <id> to mark a link as read (or click inline buttons)\n\n` +
         `Commands:\n` +
         `/start - Welcome message\n` +
         `/list - Show your saved links (add "unread" to filter)\n` +
@@ -288,12 +290,15 @@ export class BotUpdate {
         ctx.from.first_name,
         ctx.from.last_name,
       );
-      const { link, isNew } = await this.linksService.create(url, user);
+      const { link, isNew, restored } = await this.linksService.create(
+        url,
+        user,
+      );
 
       let emoji = '🔖';
       let action = 'saved';
 
-      if (!isNew) {
+      if (!isNew && !restored) {
         if (link.isRead) {
           emoji = '✅';
           action = 'already saved and read';
@@ -302,6 +307,8 @@ export class BotUpdate {
           action = 'already saved';
         }
       }
+
+      // If restored, treat as new from user perspective (silently unmarked)
 
       const displayText = link.title || link.url;
       const message = `Link ${action} (ID: ${link.id})! ${emoji}\n${displayText}`;
