@@ -3,12 +3,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Link } from '../entities/link.entity';
 import { User } from '../entities/user.entity';
+import { TitleScraperService } from './title-scraper.service';
 
 @Injectable()
 export class LinksService {
   constructor(
     @InjectRepository(Link)
     private linksRepository: Repository<Link>,
+    private readonly titleScraperService: TitleScraperService,
   ) {}
 
   async create(
@@ -21,10 +23,18 @@ export class LinksService {
     if (existing) {
       return { link: existing, isNew: false };
     }
+
+    // Fetch title if not provided
+    let finalTitle = title;
+    if (!finalTitle) {
+      const fetchedTitle = await this.titleScraperService.fetchTitle(url);
+      finalTitle = fetchedTitle || undefined;
+    }
+
     const link = this.linksRepository.create({
       url,
       user,
-      title,
+      title: finalTitle,
       isRead: false,
     });
     const savedLink = await this.linksRepository.save(link);

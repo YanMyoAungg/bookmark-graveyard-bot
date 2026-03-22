@@ -58,22 +58,27 @@ export class ReminderService {
     const message =
       `📚 Daily reminder: Here are ${unreadLinks.length} saved links to revisit:\n\n` +
       unreadLinks
-        .map(
-          (link, index) =>
-            `${index + 1}. ${link.title || link.url}\n${link.url}`,
-        )
+        .map((link, index) => {
+          const title = link.title || link.url;
+          if (link.title && link.title !== link.url) {
+            return `${index + 1}. ${title}\n${link.url}`;
+          } else {
+            return `${index + 1}. ${link.url}`;
+          }
+        })
         .join('\n\n') +
       `\n\nClick the buttons below to mark as read.`;
 
     // Create inline buttons: [ ✅ 1 ] [ ✅ 2 ] ...
-    const buttons = unreadLinks.map((link, index) =>
+    type ButtonType = ReturnType<typeof Markup.button.callback>;
+    const buttons: ButtonType[] = unreadLinks.map((link, index) =>
       Markup.button.callback(`✅ ${index + 1}`, `mark_read_${link.id}`),
     );
 
     // Group buttons into rows of up to 3
-    const keyboardRows: any[][] = [];
+    const keyboardRows: ButtonType[][] = [];
     for (let i = 0; i < buttons.length; i += 3) {
-      keyboardRows.push(buttons.slice(i, i + 3) as any[]);
+      keyboardRows.push(buttons.slice(i, i + 3));
     }
 
     const keyboard = Markup.inlineKeyboard(keyboardRows);

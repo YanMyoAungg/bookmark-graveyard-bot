@@ -22,6 +22,7 @@ export class BotUpdate {
       `Welcome to Bookmark Graveyard! 📚\n\n` +
         `I'll help you revisit saved content instead of forgetting it.\n\n` +
         `Send me any link (Facebook post, article, etc.) and I'll save it.\n` +
+        `I'll fetch the page title automatically for easier recognition.\n` +
         `I'll show the link ID with inline buttons to mark as read or delete.\n` +
         `I'll send you daily reminders with buttons to check off links directly.\n\n` +
         `Commands:\n` +
@@ -38,10 +39,11 @@ export class BotUpdate {
     await ctx.reply(
       `📖 **How to use Bookmark Graveyard**\n\n` +
         `1. Send me any URL (Facebook, article, video, etc.)\n` +
-        `2. I'll save it and show you the link ID with buttons to mark as read or delete\n` +
-        `3. I'll send you daily reminders with buttons to check off links directly\n` +
-        `4. Use /list to see all saved links with inline buttons\n` +
-        `5. Use /read <id> to mark a link as read (or click inline buttons)\n\n` +
+        `2. I'll fetch the page title automatically and save it with the link\n` +
+        `3. I'll show you the link ID with buttons to mark as read or delete\n` +
+        `4. I'll send you daily reminders with buttons to check off links directly\n` +
+        `5. Use /list to see all saved links with inline buttons\n` +
+        `6. Use /read <id> to mark a link as read (or click inline buttons)\n\n` +
         `Commands:\n` +
         `/start - Welcome message\n` +
         `/list - Show your saved links (add "unread" to filter)\n` +
@@ -81,19 +83,31 @@ export class BotUpdate {
       const seq = index + 1;
       const status = link.isRead ? '✅' : '📌';
       const title = link.title || link.url;
-      return `${seq}. (ID: ${link.id}) ${title} ${status}`;
+      const url = link.url;
+
+      if (link.title && link.title !== link.url) {
+        return `${seq}. (ID: ${link.id}) ${title}\n   ${url} ${status}`;
+      } else {
+        return `${seq}. (ID: ${link.id}) ${title} ${status}`;
+      }
     });
-    const message = `Saved links (${links.length}):\n\n${messageLines.join('\n')}`;
+    const message = `Saved links (${links.length}):\n\n${messageLines.join('\n\n')}`;
 
-    // Create inline keyboard: one button per link for marking as read
-    const keyboardRows = links.map((link) => [
-      Markup.button.callback(
-        `✅ Mark as Read (ID: ${link.id})`,
-        `mark_read_${link.id}`,
-      ),
-    ]);
+    // Create inline keyboard: only show buttons for unread links
+    const keyboardRows = links
+      .filter((link) => !link.isRead)
+      .map((link) => [
+        Markup.button.callback(
+          `✅ Mark as Read (ID: ${link.id})`,
+          `mark_read_${link.id}`,
+        ),
+      ]);
 
-    await ctx.reply(message, Markup.inlineKeyboard(keyboardRows));
+    if (keyboardRows.length > 0) {
+      await ctx.reply(message, Markup.inlineKeyboard(keyboardRows));
+    } else {
+      await ctx.reply(message);
+    }
   }
 
   @Command('read')
@@ -276,16 +290,38 @@ export class BotUpdate {
       );
       const { link, isNew } = await this.linksService.create(url, user);
 
-      const emoji = isNew ? '🔖' : '📌';
-      const action = isNew ? 'saved' : 'already saved';
-      const message = `Link ${action} (ID: ${link.id})! ${emoji}\n${link.url}`;
+      let emoji = '🔖';
+      let action = 'saved';
 
-      const keyboard = Markup.inlineKeyboard([
-        [
+      if (!isNew) {
+        if (link.isRead) {
+          emoji = '✅';
+          action = 'already saved and read';
+        } else {
+          emoji = '📌';
+          action = 'already saved';
+        }
+      }
+
+      const displayText = link.title || link.url;
+      const message = `Link ${action} (ID: ${link.id})! ${emoji}\n${displayText}`;
+
+      // Build buttons based on link state
+      type ButtonType = ReturnType<typeof Markup.button.callback>;
+      const buttons: ButtonType[] = [];
+
+      // Only show "Mark as Read" button if link is unread
+      if (!link.isRead) {
+        buttons.push(
           Markup.button.callback('✅ Mark as Read', `mark_read_${link.id}`),
-          Markup.button.callback('🗑️ Delete', `delete_${link.id}`),
-        ],
-      ]);
+        );
+      }
+
+      // Always show Delete button
+      buttons.push(Markup.button.callback('🗑️ Delete', `delete_${link.id}`));
+
+      // Create keyboard with buttons in a row (or multiple rows if needed)
+      const keyboard = Markup.inlineKeyboard([buttons]);
 
       await ctx.reply(message, keyboard);
     } catch (error) {
