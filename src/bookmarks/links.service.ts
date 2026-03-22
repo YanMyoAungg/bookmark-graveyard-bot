@@ -11,11 +11,15 @@ export class LinksService {
     private linksRepository: Repository<Link>,
   ) {}
 
-  async create(url: string, user: User, title?: string): Promise<Link> {
+  async create(
+    url: string,
+    user: User,
+    title?: string,
+  ): Promise<{ link: Link; isNew: boolean }> {
     // Check if user already has this URL (case-insensitive, ignoring trailing slash)
     const existing = await this.findByUserAndUrl(user, url);
     if (existing) {
-      throw new Error('DUPLICATE_LINK');
+      return { link: existing, isNew: false };
     }
     const link = this.linksRepository.create({
       url,
@@ -23,7 +27,8 @@ export class LinksService {
       title,
       isRead: false,
     });
-    return this.linksRepository.save(link);
+    const savedLink = await this.linksRepository.save(link);
+    return { link: savedLink, isNew: true };
   }
 
   async findByUserAndUrl(user: User, url: string): Promise<Link | null> {

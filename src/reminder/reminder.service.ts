@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { Telegraf } from 'telegraf';
+import { Telegraf, Markup } from 'telegraf';
 import { InjectBot } from 'nestjs-telegraf';
 import { User } from '../entities/user.entity';
 import { LinksService } from '../bookmarks/links.service';
@@ -63,10 +63,23 @@ export class ReminderService {
             `${index + 1}. ${link.title || link.url}\n${link.url}`,
         )
         .join('\n\n') +
-      `\n\nUse /read <id> to mark as read.`;
+      `\n\nClick the buttons below to mark as read.`;
+
+    // Create inline buttons: [ ✅ 1 ] [ ✅ 2 ] ...
+    const buttons = unreadLinks.map((link, index) =>
+      Markup.button.callback(`✅ ${index + 1}`, `mark_read_${link.id}`),
+    );
+
+    // Group buttons into rows of up to 3
+    const keyboardRows: any[][] = [];
+    for (let i = 0; i < buttons.length; i += 3) {
+      keyboardRows.push(buttons.slice(i, i + 3) as any[]);
+    }
+
+    const keyboard = Markup.inlineKeyboard(keyboardRows);
 
     try {
-      await this.bot.telegram.sendMessage(user.telegramId, message);
+      await this.bot.telegram.sendMessage(user.telegramId, message, keyboard);
       this.logger.log(`Reminder sent to user ${user.telegramId}`);
     } catch (error) {
       this.logger.error(

@@ -1,5 +1,5 @@
-import { Update, Command, Ctx, On } from 'nestjs-telegraf';
-import { Context } from 'telegraf';
+import { Update, Command, Ctx, On, Action } from 'nestjs-telegraf';
+import { Context, Markup } from 'telegraf';
 import { UsersService } from '../bookmarks/users.service';
 import { LinksService } from '../bookmarks/links.service';
 
@@ -22,7 +22,8 @@ export class BotUpdate {
       `Welcome to Bookmark Graveyard! 📚\n\n` +
         `I'll help you revisit saved content instead of forgetting it.\n\n` +
         `Send me any link (Facebook post, article, etc.) and I'll save it.\n` +
-        `I'll send you daily reminders to revisit your saved links.\n\n` +
+        `I'll show the link ID with inline buttons to mark as read or delete.\n` +
+        `I'll send you daily reminders with buttons to check off links directly.\n\n` +
         `Commands:\n` +
         `/list - Show your saved links\n` +
         `/read <id> - Mark a link as read\n` +
@@ -37,10 +38,10 @@ export class BotUpdate {
     await ctx.reply(
       `📖 **How to use Bookmark Graveyard**\n\n` +
         `1. Send me any URL (Facebook, article, video, etc.)\n` +
-        `2. I'll save it and store it in your list\n` +
-        `3. I'll send you daily reminders with 3-5 unread links\n` +
-        `4. Use /list to see all saved links\n` +
-        `5. Use /read <id> to mark a link as read (so it won't be reminded)\n\n` +
+        `2. I'll save it and show you the link ID with buttons to mark as read or delete\n` +
+        `3. I'll send you daily reminders with buttons to check off links directly\n` +
+        `4. Use /list to see all saved links with inline buttons\n` +
+        `5. Use /read <id> to mark a link as read (or click inline buttons)\n\n` +
         `Commands:\n` +
         `/start - Welcome message\n` +
         `/list - Show your saved links (add "unread" to filter)\n` +
@@ -76,14 +77,23 @@ export class BotUpdate {
       return;
     }
 
-    const message = links
-      .map(
-        (link) =>
-          `${link.id}. ${link.title || link.url} ${link.isRead ? '✅' : '📌'}`,
-      )
-      .join('\n');
+    const messageLines = links.map((link, index) => {
+      const seq = index + 1;
+      const status = link.isRead ? '✅' : '📌';
+      const title = link.title || link.url;
+      return `${seq}. (ID: ${link.id}) ${title} ${status}`;
+    });
+    const message = `Saved links (${links.length}):\n\n${messageLines.join('\n')}`;
 
-    await ctx.reply(`Saved links (${links.length}):\n\n${message}`);
+    // Create inline keyboard: one button per link for marking as read
+    const keyboardRows = links.map((link) => [
+      Markup.button.callback(
+        `✅ Mark as Read (ID: ${link.id})`,
+        `mark_read_${link.id}`,
+      ),
+    ]);
+
+    await ctx.reply(message, Markup.inlineKeyboard(keyboardRows));
   }
 
   @Command('read')
@@ -177,6 +187,75 @@ export class BotUpdate {
     );
   }
 
+  @Action(/^mark_read_(\d+)$/)
+  async handleMarkRead(@Ctx() ctx: Context) {
+    if (!ctx.from || !ctx.callbackQuery || !('data' in ctx.callbackQuery))
+      return;
+    const match = ctx.callbackQuery.data.match(/^mark_read_(\d+)$/);
+    if (!match) return;
+    const linkId = parseInt(match[1], 10);
+
+    const link = await this.linksService.findById(linkId);
+    if (!link) {
+      await ctx.answerCbQuery('Link not found.');
+      return;
+    }
+
+    const user = await this.usersService.findByTelegramId(ctx.from.id);
+    if (!user || link.user.id !== user.id) {
+      await ctx.answerCbQuery('You cannot mark this link as read.');
+      return;
+    }
+
+    await this.linksService.markAsRead(linkId);
+    await ctx.answerCbQuery('Link marked as read! ✅');
+
+    // Update message text
+    if (ctx.callbackQuery.message && 'text' in ctx.callbackQuery.message) {
+      const newText =
+        ctx.callbackQuery.message.text.replace('📌', '✅') +
+        '\n\n✅ Marked as read!';
+      await ctx.editMessageText(newText, {
+        ...Markup.inlineKeyboard([]), // Remove buttons
+      });
+    }
+  }
+
+  @Action(/^delete_(\d+)$/)
+  async handleDelete(@Ctx() ctx: Context) {
+    if (!ctx.from || !ctx.callbackQuery || !('data' in ctx.callbackQuery))
+      return;
+    const match = ctx.callbackQuery.data.match(/^delete_(\d+)$/);
+    if (!match) return;
+    const linkId = parseInt(match[1], 10);
+
+    const link = await this.linksService.findById(linkId);
+    if (!link) {
+      await ctx.answerCbQuery('Link not found.');
+      return;
+    }
+
+    const user = await this.usersService.findByTelegramId(ctx.from.id);
+    if (!user || link.user.id !== user.id) {
+      await ctx.answerCbQuery('You cannot delete this link.');
+      return;
+    }
+
+    const deleted = await this.linksService.delete(linkId);
+    if (deleted) {
+      await ctx.answerCbQuery('Link deleted! 🗑️');
+
+      if (ctx.callbackQuery.message && 'text' in ctx.callbackQuery.message) {
+        const newText = ctx.callbackQuery.message.text + '\n\n🗑️ Deleted!';
+        await ctx.editMessageText(newText, {
+          ...Markup.inlineKeyboard([]), // Remove buttons
+        });
+      }
+    } else {
+      await ctx.answerCbQuery('Failed to delete link.');
+    }
+  }
+
   @On('text')
   async onText(@Ctx() ctx: Context) {
     if (!ctx.from || !ctx.message || !('text' in ctx.message)) return;
@@ -195,17 +274,23 @@ export class BotUpdate {
         ctx.from.first_name,
         ctx.from.last_name,
       );
-      await this.linksService.create(url, user);
-      await ctx.reply(`Link saved! I'll remind you about it later. 🔖`);
+      const { link, isNew } = await this.linksService.create(url, user);
+
+      const emoji = isNew ? '🔖' : '📌';
+      const action = isNew ? 'saved' : 'already saved';
+      const message = `Link ${action} (ID: ${link.id})! ${emoji}\n${link.url}`;
+
+      const keyboard = Markup.inlineKeyboard([
+        [
+          Markup.button.callback('✅ Mark as Read', `mark_read_${link.id}`),
+          Markup.button.callback('🗑️ Delete', `delete_${link.id}`),
+        ],
+      ]);
+
+      await ctx.reply(message, keyboard);
     } catch (error) {
-      if (error instanceof Error && error.message === 'DUPLICATE_LINK') {
-        await ctx.reply(
-          `You've already saved this link! I'll remind you about it later. 📌`,
-        );
-      } else {
-        console.error('Failed to save link:', error);
-        await ctx.reply(`Failed to save link. Please try again later.`);
-      }
+      console.error('Failed to save link:', error);
+      await ctx.reply(`Failed to save link. Please try again later.`);
     }
   }
 
