@@ -26,10 +26,10 @@ services:
         value: '0 9 * * *' # 9 AM daily
       - key: REMINDER_LIMIT
         value: '5'
-      - fromDatabase:
+      - key: DATABASE_URL
+        fromDatabase:
           name: bookmark-graveyard-db
           property: connectionString
-        as: DATABASE_URL
 
 databases:
   - name: bookmark-graveyard-db
