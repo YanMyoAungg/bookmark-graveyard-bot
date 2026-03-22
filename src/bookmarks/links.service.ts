@@ -37,8 +37,8 @@ export class LinksService {
         return { link: restoredLink, isNew: false, restored: true };
       }
 
-      // Link exists but is already unread - just return it
-      return { link: existing, isNew: false, restored: false };
+      // Link exists and is already unread - throw error to prevent duplicate
+      throw new Error('DUPLICATE_UNREAD_LINK');
     }
 
     // Fetch title if not provided

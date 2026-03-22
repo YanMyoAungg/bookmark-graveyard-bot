@@ -332,8 +332,14 @@ export class BotUpdate {
 
       await ctx.reply(message, keyboard);
     } catch (error) {
-      console.error('Failed to save link:', error);
-      await ctx.reply(`Failed to save link. Please try again later.`);
+      if (error instanceof Error && error.message === 'DUPLICATE_UNREAD_LINK') {
+        await ctx.reply(
+          `You already have this link saved and unread! Use /list to see your saved links.`,
+        );
+      } else {
+        console.error('Failed to save link:', error);
+        await ctx.reply(`Failed to save link. Please try again later.`);
+      }
     }
   }
 
