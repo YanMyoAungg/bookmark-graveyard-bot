@@ -12,6 +12,11 @@ export class LinksService {
   ) {}
 
   async create(url: string, user: User, title?: string): Promise<Link> {
+    // Check if user already has this URL (case-insensitive, ignoring trailing slash)
+    const existing = await this.findByUserAndUrl(user, url);
+    if (existing) {
+      throw new Error('DUPLICATE_LINK');
+    }
     const link = this.linksRepository.create({
       url,
       user,
@@ -19,6 +24,16 @@ export class LinksService {
       isRead: false,
     });
     return this.linksRepository.save(link);
+  }
+
+  async findByUserAndUrl(user: User, url: string): Promise<Link | null> {
+    // Normalize URL for comparison: lowercase, trim, remove trailing slash
+    const normalizedUrl = url.toLowerCase().trim().replace(/\/$/, '');
+    return this.linksRepository
+      .createQueryBuilder('link')
+      .where('link.userId = :userId', { userId: user.id })
+      .andWhere('LOWER(TRIM(link.url)) = :url', { url: normalizedUrl })
+      .getOne();
   }
 
   async findByUser(

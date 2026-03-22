@@ -26,6 +26,7 @@ export class BotUpdate {
         `Commands:\n` +
         `/list - Show your saved links\n` +
         `/read <id> - Mark a link as read\n` +
+        `/delete <id> - Delete a link permanently\n` +
         `/support - Support the project\n` +
         `/help - Show this help message`,
     );
@@ -44,6 +45,7 @@ export class BotUpdate {
         `/start - Welcome message\n` +
         `/list - Show your saved links (add "unread" to filter)\n` +
         `/read <id> - Mark link as read\n` +
+        `/delete <id> - Delete a link permanently\n` +
         `/support - Support the project (donation options)\n` +
         `/help - This message`,
       { parse_mode: 'Markdown' },
@@ -118,6 +120,44 @@ export class BotUpdate {
     await ctx.reply(`Link ${id} marked as read ✅`);
   }
 
+  @Command('delete')
+  async delete(@Ctx() ctx: Context) {
+    if (!ctx.from || !ctx.message || !('text' in ctx.message)) {
+      await ctx.reply('Unable to process command.');
+      return;
+    }
+    const args = ctx.message.text.split(' ').slice(1);
+    if (args.length === 0) {
+      await ctx.reply('Please provide link ID: /delete <id>');
+      return;
+    }
+    const id = parseInt(args[0], 10);
+    if (isNaN(id)) {
+      await ctx.reply('Invalid ID. Please provide a number.');
+      return;
+    }
+
+    const link = await this.linksService.findById(id);
+    if (!link) {
+      await ctx.reply('Link not found.');
+      return;
+    }
+
+    // Check if link belongs to user
+    const user = await this.usersService.findByTelegramId(ctx.from.id);
+    if (!user || link.user.id !== user.id) {
+      await ctx.reply('You cannot delete this link.');
+      return;
+    }
+
+    const deleted = await this.linksService.delete(id);
+    if (deleted) {
+      await ctx.reply(`Link ${id} deleted permanently. 🗑️`);
+    } else {
+      await ctx.reply('Failed to delete link.');
+    }
+  }
+
   @Command('support')
   async support(@Ctx() ctx: Context) {
     if (!ctx.from) {
@@ -158,8 +198,14 @@ export class BotUpdate {
       await this.linksService.create(url, user);
       await ctx.reply(`Link saved! I'll remind you about it later. 🔖`);
     } catch (error) {
-      console.error('Failed to save link:', error);
-      await ctx.reply(`Failed to save link. Please try again later.`);
+      if (error instanceof Error && error.message === 'DUPLICATE_LINK') {
+        await ctx.reply(
+          `You've already saved this link! I'll remind you about it later. 📌`,
+        );
+      } else {
+        console.error('Failed to save link:', error);
+        await ctx.reply(`Failed to save link. Please try again later.`);
+      }
     }
   }
 

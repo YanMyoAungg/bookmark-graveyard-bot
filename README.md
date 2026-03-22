@@ -156,6 +156,7 @@ You can also use [Supabase](https://supabase.com) (free tier) for PostgreSQL:
 - `/help` - Show help
 - `/list` - Show saved links (add "unread" to filter)
 - `/read <id>` - Mark a link as read
+- `/delete <id>` - Delete a link permanently
 - `/support` - Support the project (optional donation)
 
 ## Configuration

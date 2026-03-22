@@ -33,26 +33,14 @@ import { ReminderModule } from './reminder/reminder.module';
             throw new Error('DATABASE_URL is required for PostgreSQL');
           }
 
-          // Parse DATABASE_URL (format: postgresql://user:password@host:port/database)
-          const url = new URL(databaseUrl);
+          // Use the URL directly - TypeORM handles parsing
+          const sslRequired = configService.get<string>('DB_SSL') !== 'false';
           return {
             type: 'postgres',
-            host: url.hostname,
-            port: parseInt(url.port || '5432', 10),
-            username: url.username,
-            password: url.password,
-            database: url.pathname.slice(1), // remove leading '/'
+            url: databaseUrl,
             entities: [__dirname + '/**/*.entity{.ts,.js}'],
             synchronize,
-            ssl: configService.get<string>('DB_SSL') !== 'false',
-            extra: {
-              ssl:
-                configService.get<string>('DB_SSL') !== 'false'
-                  ? {
-                      rejectUnauthorized: false,
-                    }
-                  : undefined,
-            },
+            ssl: sslRequired ? { rejectUnauthorized: false } : false,
           };
         }
 
