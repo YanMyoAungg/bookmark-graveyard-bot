@@ -184,6 +184,23 @@ export class BotUpdate {
     }
   }
 
+  @Command('deduplicate')
+  async deduplicate(@Ctx() ctx: Context) {
+    if (!ctx.from) {
+      await ctx.reply('Unable to identify user.');
+      return;
+    }
+    const user = await this.usersService.findByTelegramId(ctx.from.id);
+    if (!user) {
+      await ctx.reply('User not found. Please send /start first.');
+      return;
+    }
+    const removed = await this.linksService.deduplicateForUser(user);
+    await ctx.reply(
+      `Deduplication complete. Removed ${removed} duplicate link(s).`,
+    );
+  }
+
   @Command('support')
   async support(@Ctx() ctx: Context) {
     if (!ctx.from) {
