@@ -4,8 +4,10 @@ import {
   Column,
   CreateDateColumn,
   OneToMany,
+  OneToOne,
 } from 'typeorm';
 import { Link } from './link.entity';
+import { UserSettings } from './user-settings.entity';
 
 @Entity()
 export class User {
@@ -29,4 +31,7 @@ export class User {
 
   @OneToMany(() => Link, (link) => link.user)
   links: Link[];
+
+  @OneToOne(() => UserSettings, (settings) => settings.user)
+  settings: UserSettings;
 }

@@ -1,6 +1,7 @@
 # Render Blueprint for Bookmark Graveyard
-# Deploys a PostgreSQL database and the Telegram bot web service
+# Deploys the Telegram bot web service with SQLite database
 # Documentation: https://render.com/docs/blueprint-spec
+# Note: SQLite files are ephemeral on Render (data lost on redeploy)
 
 services:
   - type: web
@@ -14,26 +15,9 @@ services:
     envVars:
       - key: TELEGRAM_BOT_TOKEN
         sync: false # Must be set manually in Render dashboard
-      - key: DB_TYPE
-        value: postgres
-      - key: DB_SSL
-        value: 'true'
       - key: NODE_ENV
         value: production
-      - key: DB_SYNCHRONIZE
-        value: 'true'
-      - key: REMINDER_CRON
-        value: '0 9 * * *' # 9 AM daily
-      - key: REMINDER_LIMIT
-        value: '5'
-      - key: DATABASE_URL
-        fromDatabase:
-          name: bookmark-graveyard-db
-          property: connectionString
-
-databases:
-  - name: bookmark-graveyard-db
-    region: singapore # Should match web service region for performance
-    plan: free
-    databaseName: bookmark_graveyard
-    user: bookmark_user
+      - key: DB_PATH
+        value: database.sqlite
+      # DB_SYNCHRONIZE is false by default in production
+      # Set to true only if you need auto table creation (not recommended for production)

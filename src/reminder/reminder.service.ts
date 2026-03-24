@@ -5,6 +5,7 @@ import { InjectBot } from 'nestjs-telegraf';
 import { User } from '../entities/user.entity';
 import { LinksService } from '../bookmarks/links.service';
 import { UsersService } from '../bookmarks/users.service';
+import { UserSettingsService } from '../bookmarks/user-settings.service';
 
 @Injectable()
 export class ReminderService {
@@ -13,41 +14,54 @@ export class ReminderService {
   constructor(
     private readonly usersService: UsersService,
     private readonly linksService: LinksService,
+    private readonly userSettingsService: UserSettingsService,
     @InjectBot() private readonly bot: Telegraf,
   ) {}
 
-  @Cron(process.env.REMINDER_CRON || CronExpression.EVERY_DAY_AT_9AM)
-  async sendDailyReminders() {
-    this.logger.log('Starting daily reminders...');
+  @Cron(CronExpression.EVERY_MINUTE)
+  async sendReminders() {
+    this.logger.log('Checking reminders...');
 
     try {
       const users = await this.usersService.findAll();
-      this.logger.log(`Found ${users.length} users to send reminders`);
+      this.logger.log(`Found ${users.length} users to check`);
+
+      const now = new Date();
 
       for (const user of users) {
         try {
+          const shouldSend = await this.userSettingsService.shouldSendReminder(
+            user,
+            now,
+          );
+          if (!shouldSend) {
+            this.logger.debug(`Skipping reminder for user ${user.telegramId}`);
+            continue;
+          }
+
           await this.sendReminderToUser(user);
+          await this.userSettingsService.updateLastReminderSent(user, now);
         } catch (error) {
           this.logger.error(
-            `Error sending reminder to user ${user.telegramId}: ${error instanceof Error ? error.message : String(error)}`,
+            `Error processing reminder for user ${user.telegramId}: ${error instanceof Error ? error.message : String(error)}`,
           );
         }
       }
 
-      this.logger.log('Daily reminders completed');
+      this.logger.log('Reminder check completed');
     } catch (error) {
       this.logger.error(
-        `Failed to send daily reminders: ${error instanceof Error ? error.message : String(error)}`,
+        `Failed to check reminders: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }
 
   // Helper method to send reminder to a single user
   private async sendReminderToUser(user: User) {
-    const limit = parseInt(process.env.REMINDER_LIMIT || '5', 10);
+    const settings = await this.userSettingsService.getSettingsForUser(user);
     const unreadLinks = await this.linksService.getUnreadLinksForUser(
       user,
-      limit,
+      settings.reminderLimit,
     );
 
     if (unreadLinks.length === 0) {
@@ -56,7 +70,7 @@ export class ReminderService {
     }
 
     const message =
-      `📚 Daily reminder: Here are ${unreadLinks.length} saved links to revisit:\n\n` +
+      `📚 Reminder: Here are ${unreadLinks.length} saved links to revisit:\n\n` +
       unreadLinks
         .map((link, index) => {
           const title = link.title || link.url;

@@ -2,12 +2,15 @@ import { Update, Command, Ctx, On, Action } from 'nestjs-telegraf';
 import { Context, Markup } from 'telegraf';
 import { UsersService } from '../bookmarks/users.service';
 import { LinksService } from '../bookmarks/links.service';
+import { UserSettingsService } from '../bookmarks/user-settings.service';
+import { User } from '../entities/user.entity';
 
 @Update()
 export class BotUpdate {
   constructor(
     private readonly usersService: UsersService,
     private readonly linksService: LinksService,
+    private readonly userSettingsService: UserSettingsService,
   ) {}
 
   @Command('start')
@@ -17,22 +20,48 @@ export class BotUpdate {
       return;
     }
     const { id, username, first_name, last_name } = ctx.from;
-    await this.usersService.findOrCreate(id, username, first_name, last_name);
-    await ctx.reply(
-      `Welcome to Bookmark Graveyard! 📚\n\n` +
-        `I'll help you revisit saved content instead of forgetting it.\n\n` +
-        `Send me any link (Facebook post, article, etc.) and I'll save it.\n` +
-        `I'll fetch the page title automatically for easier recognition.\n` +
-        `I'll show the link ID with inline buttons to mark as read or delete.\n` +
-        `I'll send you daily reminders with buttons to check off links directly.\n` +
-        `Send a previously read link again to restore it to your reminders.\n\n` +
-        `Commands:\n` +
-        `/list - Show your saved links\n` +
-        `/read <id> - Mark a link as read\n` +
-        `/delete <id> - Delete a link permanently\n` +
-        `/support - Support the project\n` +
-        `/help - Show this help message`,
+    const user = await this.usersService.findOrCreate(
+      id,
+      username,
+      first_name,
+      last_name,
     );
+    const settings = await this.userSettingsService.getSettingsForUser(user);
+
+    if (!settings.isSetupComplete) {
+      const welcomeMsg =
+        `Welcome to Bookmark Graveyard! 📚\n\n` +
+        `I'll help you revisit saved content instead of forgetting it.\n\n` +
+        `Before we begin, let's set up your reminder preferences. ` +
+        `You can customize:\n` +
+        `• Reminder frequency (daily, weekly, etc.)\n` +
+        `• Time in UTC\n` +
+        `• Number of links per reminder\n\n` +
+        `Click below to configure your reminders:`;
+      await ctx.reply(
+        welcomeMsg,
+        Markup.inlineKeyboard([
+          [Markup.button.callback('⚙️ Configure Reminders', 'setup_start')],
+        ]),
+      );
+    } else {
+      await ctx.reply(
+        `Welcome to Bookmark Graveyard! 📚\n\n` +
+          `I'll help you revisit saved content instead of forgetting it.\n\n` +
+          `Send me any link (Facebook post, article, etc.) and I'll save it.\n` +
+          `I'll fetch the page title automatically for easier recognition.\n` +
+          `I'll show the link ID with inline buttons to mark as read or delete.\n` +
+          `I'll send you reminders based on your preferences.\n` +
+          `Send a previously read link again to restore it to your reminders.\n\n` +
+          `Commands:\n` +
+          `/list - Show your saved links\n` +
+          `/read <id> - Mark a link as read\n` +
+          `/delete <id> - Delete a link permanently\n` +
+          `/settings - Configure reminder preferences\n` +
+          `/support - Support the project\n` +
+          `/help - Show this help message`,
+      );
+    }
   }
 
   @Command('help')
@@ -42,7 +71,7 @@ export class BotUpdate {
         `1. Send me any URL (Facebook, article, video, etc.)\n` +
         `2. I'll fetch the page title automatically and save it with the link\n` +
         `3. I'll show you the link ID with buttons to mark as read or delete\n` +
-        `4. I'll send you daily reminders with buttons to check off links directly\n` +
+        `4. I'll send you reminders based on your preferences (customizable via /settings)\n` +
         `5. Send a previously read link again to restore it to your reminders\n` +
         `6. Use /list to see all saved links with inline buttons\n` +
         `7. Use /read <id> to mark a link as read (or click inline buttons)\n\n` +
@@ -51,8 +80,9 @@ export class BotUpdate {
         `/list - Show your saved links (add "unread" to filter)\n` +
         `/read <id> - Mark link as read\n` +
         `/delete <id> - Delete a link permanently\n` +
-        `/support - Support the project (donation options)\n` +
-        `/help - This message`,
+        `/settings - Configure reminder frequency, time, and links per reminder\n` +
+        `/support - Support me\n` +
+        `/help - helps`,
       { parse_mode: 'Markdown' },
     );
   }
@@ -220,6 +250,49 @@ export class BotUpdate {
     );
   }
 
+  @Command('settings')
+  async settings(@Ctx() ctx: Context) {
+    if (!ctx.from) {
+      await ctx.reply('Unable to identify user.');
+      return;
+    }
+    const user = await this.usersService.findByTelegramId(ctx.from.id);
+    if (!user) {
+      await ctx.reply('User not found. Please send /start first.');
+      return;
+    }
+    const settings = await this.userSettingsService.getSettingsForUser(user);
+
+    const frequencyText = {
+      daily: 'Daily',
+      weekly: 'Weekly',
+      biweekly: 'Bi-weekly (every 2 weeks)',
+      monthly: 'Monthly',
+    }[settings.reminderFrequency];
+
+    const message =
+      `⚙️ **Your Reminder Settings**\n\n` +
+      `**Frequency:** ${frequencyText}\n` +
+      `**Time (UTC):** ${settings.reminderTime}\n` +
+      `**Links per reminder:** ${settings.reminderLimit}\n` +
+      `**Setup complete:** ${settings.isSetupComplete ? 'Yes' : 'No'}\n\n` +
+      `Use buttons below to change settings.`;
+
+    const keyboard = Markup.inlineKeyboard([
+      [Markup.button.callback('🔄 Change Frequency', 'settings_frequency')],
+      [Markup.button.callback('⏰ Change Time (UTC)', 'settings_time')],
+      [Markup.button.callback('🔢 Change Links Limit', 'settings_limit')],
+      [
+        Markup.button.callback(
+          '✅ Mark Setup Complete',
+          'settings_setup_complete',
+        ),
+      ],
+    ]);
+
+    await ctx.reply(message, { parse_mode: 'Markdown', ...keyboard });
+  }
+
   @Action(/^mark_read_(\d+)$/)
   async handleMarkRead(@Ctx() ctx: Context) {
     if (!ctx.from || !ctx.callbackQuery || !('data' in ctx.callbackQuery))
@@ -286,6 +359,140 @@ export class BotUpdate {
       }
     } else {
       await ctx.answerCbQuery('Failed to delete link.');
+    }
+  }
+
+  @Action('settings_frequency')
+  async handleSettingsFrequency(@Ctx() ctx: Context) {
+    if (!ctx.from || !ctx.callbackQuery) return;
+    const user = await this.usersService.findByTelegramId(ctx.from.id);
+    if (!user) return;
+    const settings = await this.userSettingsService.getSettingsForUser(user);
+    const frequencies: Array<'daily' | 'weekly' | 'biweekly' | 'monthly'> = [
+      'daily',
+      'weekly',
+      'biweekly',
+      'monthly',
+    ];
+    const currentIndex = frequencies.indexOf(settings.reminderFrequency);
+    const nextIndex = (currentIndex + 1) % frequencies.length;
+    const nextFrequency = frequencies[nextIndex];
+    await this.userSettingsService.updateSettings(user, {
+      reminderFrequency: nextFrequency,
+    });
+    await ctx.answerCbQuery(`Frequency set to ${nextFrequency}`);
+    await this.showSettings(ctx, user);
+  }
+
+  @Action('settings_limit')
+  async handleSettingsLimit(@Ctx() ctx: Context) {
+    if (!ctx.from || !ctx.callbackQuery) return;
+    const user = await this.usersService.findByTelegramId(ctx.from.id);
+    if (!user) return;
+    const settings = await this.userSettingsService.getSettingsForUser(user);
+    const limits = [3, 4, 5, 6, 7, 8, 9, 10];
+    const currentIndex = limits.indexOf(settings.reminderLimit);
+    const nextIndex = (currentIndex + 1) % limits.length;
+    const nextLimit = limits[nextIndex];
+    await this.userSettingsService.updateSettings(user, {
+      reminderLimit: nextLimit,
+    });
+    await ctx.answerCbQuery(`Limit set to ${nextLimit}`);
+    await this.showSettings(ctx, user);
+  }
+
+  @Action('settings_time')
+  async handleSettingsTime(@Ctx() ctx: Context) {
+    if (!ctx.from || !ctx.callbackQuery) return;
+    const user = await this.usersService.findByTelegramId(ctx.from.id);
+    if (!user) return;
+    const settings = await this.userSettingsService.getSettingsForUser(user);
+    const [hour, minute] = settings.reminderTime.split(':').map(Number);
+    const newHour = (hour + 1) % 24;
+    const newTime = `${newHour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+    await this.userSettingsService.updateSettings(user, {
+      reminderTime: newTime,
+    });
+    await ctx.answerCbQuery(`Time set to ${newTime} UTC`);
+    await this.showSettings(ctx, user);
+  }
+
+  @Action('settings_setup_complete')
+  async handleSetupComplete(@Ctx() ctx: Context) {
+    if (!ctx.from || !ctx.callbackQuery) return;
+    const user = await this.usersService.findByTelegramId(ctx.from.id);
+    if (!user) return;
+    await this.userSettingsService.updateSettings(user, {
+      isSetupComplete: true,
+    });
+    await ctx.answerCbQuery('Setup marked as complete!');
+    await this.showSettings(ctx, user);
+  }
+
+  @Action('setup_start')
+  async handleSetupStart(@Ctx() ctx: Context) {
+    if (!ctx.from || !ctx.callbackQuery) return;
+    const user = await this.usersService.findByTelegramId(ctx.from.id);
+    if (!user) return;
+    await this.showSettings(ctx, user);
+  }
+
+  private async showSettings(ctx: Context, user: User) {
+    const settings = await this.userSettingsService.getSettingsForUser(user);
+
+    const frequencyText = {
+      daily: 'Daily',
+      weekly: 'Weekly',
+      biweekly: 'Bi-weekly (every 2 weeks)',
+      monthly: 'Monthly',
+    }[settings.reminderFrequency];
+
+    let message = '';
+    if (!settings.isSetupComplete) {
+      message =
+        `⚙️ **First-time Setup**\n\n` +
+        `Please configure your reminder preferences:\n\n` +
+        `**Frequency:** ${frequencyText}\n` +
+        `**Time (UTC):** ${settings.reminderTime}\n` +
+        `**Links per reminder:** ${settings.reminderLimit}\n\n` +
+        `Use the buttons below to adjust each setting. When you're satisfied, click "✅ Finish Setup".`;
+    } else {
+      message =
+        `⚙️ **Your Reminder Settings**\n\n` +
+        `**Frequency:** ${frequencyText}\n` +
+        `**Time (UTC):** ${settings.reminderTime}\n` +
+        `**Links per reminder:** ${settings.reminderLimit}\n\n` +
+        `Use buttons below to change settings.`;
+    }
+
+    const keyboardRows = [
+      [Markup.button.callback('🔄 Change Frequency', 'settings_frequency')],
+      [Markup.button.callback('⏰ Change Time (UTC)', 'settings_time')],
+      [Markup.button.callback('🔢 Change Links Limit', 'settings_limit')],
+    ];
+
+    if (!settings.isSetupComplete) {
+      keyboardRows.push([
+        Markup.button.callback('✅ Finish Setup', 'settings_setup_complete'),
+      ]);
+    } else {
+      keyboardRows.push([
+        Markup.button.callback(
+          '✅ Mark Setup Complete',
+          'settings_setup_complete',
+        ),
+      ]);
+    }
+
+    const keyboard = Markup.inlineKeyboard(keyboardRows);
+
+    if (ctx.callbackQuery && ctx.callbackQuery.message) {
+      await ctx.editMessageText(message, {
+        parse_mode: 'Markdown',
+        ...keyboard,
+      });
+    } else {
+      await ctx.reply(message, { parse_mode: 'Markdown', ...keyboard });
     }
   }
 

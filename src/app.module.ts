@@ -17,8 +17,6 @@ import { ReminderModule } from './reminder/reminder.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        const dbType = configService.get<string>('DB_TYPE', 'sqlite');
-
         // Determine synchronize setting: allow override via DB_SYNCHRONIZE, otherwise based on NODE_ENV
         const synchronizeEnv = configService.get<string>('DB_SYNCHRONIZE');
         const synchronize =
@@ -26,30 +24,12 @@ import { ReminderModule } from './reminder/reminder.module';
             ? synchronizeEnv === 'true'
             : configService.get<string>('NODE_ENV') !== 'production';
 
-        if (dbType === 'postgres') {
-          // PostgreSQL configuration (for Render, Supabase, etc.)
-          const databaseUrl = configService.get<string>('DATABASE_URL');
-          if (!databaseUrl) {
-            throw new Error('DATABASE_URL is required for PostgreSQL');
-          }
-
-          // Use the URL directly - TypeORM handles parsing
-          const sslRequired = configService.get<string>('DB_SSL') !== 'false';
-          return {
-            type: 'postgres',
-            url: databaseUrl,
-            entities: [__dirname + '/**/*.entity{.ts,.js}'],
-            synchronize,
-            ssl: sslRequired ? { rejectUnauthorized: false } : false,
-          };
-        }
-
-        // Default SQLite configuration (for local development)
+        // SQLite configuration
         return {
           type: 'sqlite',
-          database: configService.get<string>('DB_DATABASE', 'bookmarks.db'),
+          database: configService.get<string>('DB_PATH', 'database.sqlite'),
           entities: [__dirname + '/**/*.entity{.ts,.js}'],
-          synchronize: true, // Always synchronize for SQLite (local dev)
+          synchronize,
         };
       },
     }),

@@ -24,14 +24,15 @@ People save useful content (Facebook posts, articles, videos) but rarely revisit
 ## Features
 
 - **Save links**: Send any URL to the bot (Facebook, articles, etc.)
-- **Daily reminders**: Get 3-5 unread links delivered daily
+- **Customizable reminders**: Set frequency (daily/weekly/bi-weekly/monthly), time (UTC), and links per reminder (3-10)
 - **Manage links**: List saved links, mark as read
 - **Simple**: No accounts, just Telegram
+- **First-time setup**: Interactive configuration of reminder preferences
 
 ## Tech Stack
 
 - NestJS (TypeScript)
-- SQLite (local development) / PostgreSQL (production)
+- SQLite
 - Telegraf (Telegram bot framework)
 - TypeORM
 
@@ -73,21 +74,15 @@ pnpm run start:prod
 
 ## Deployment on Render (Free Tier)
 
-Render's free tier is suitable for hosting this bot. Since SQLite files are ephemeral on Render, the bot automatically uses PostgreSQL when `DATABASE_URL` is provided.
+Render's free tier is suitable for hosting this bot. The bot uses SQLite for data storage.
+
+**Important**: SQLite files are ephemeral on Render - your data will be lost when the service restarts or redeploys. This is acceptable for testing or if you don't need persistent data.
 
 ### 1. Create a Render account
 
 - Sign up at [render.com](https://render.com) (GitHub login recommended)
 
-### 2. Create a PostgreSQL database
-
-- In Render Dashboard, click "New +" → "PostgreSQL"
-- Choose a name (e.g., `bookmark‑graveyard‑db`)
-- Select "Free" instance type
-- Create database
-- Note the connection string (`DATABASE_URL`) from the dashboard
-
-### 3. Deploy the bot as a Web Service
+### 2. Deploy the bot as a Web Service
 
 - In Render Dashboard, click "New +" → "Web Service"
 - Connect your GitHub repository
@@ -99,22 +94,19 @@ Render's free tier is suitable for hosting this bot. Since SQLite files are ephe
   - **Build Command**: `pnpm install && pnpm run build`
   - **Start Command**: `pnpm run start:prod`
 - Add environment variables:
-  - `TELEGRAM_BOT_TOKEN`: Your bot token
-  - `DATABASE_URL`: The PostgreSQL connection string from step 2
-  - `DB_TYPE`: `postgres`
+  - `TELEGRAM_BOT_TOKEN`: Your bot token (required)
   - `NODE_ENV`: `production`
-  - `DB_SYNCHRONIZE`: `true` (set to `false` after first successful deployment)
-  - `REMINDER_CRON`: `0 9 * * *` (9 AM daily, adjust as needed)
-  - `REMINDER_LIMIT`: `5`
+  - `DB_PATH`: `database.sqlite` (SQLite database file path)
+  - Note: Reminder settings are now per-user and configurable via `/settings` command
 - Click "Create Web Service"
 
-### 4. Wait for deployment
+### 3. Wait for deployment
 
 - Render will build and deploy your bot
 - Check logs for any errors
 - The bot will start polling Telegram
 
-### 5. Keep the service awake (Free tier)
+### 4. Keep the service awake (Free tier)
 
 Render's free tier services sleep after 15 minutes of inactivity. To keep your bot awake:
 
@@ -131,49 +123,42 @@ This repository includes a `render.yaml` blueprint file that automates deploymen
 1. Fork or push this repository to your GitHub account
 2. In Render Dashboard, click "New +" → "Blueprint"
 3. Connect your repository
-4. Render will detect the `render.yaml` and create both the database and web service automatically
+4. Render will detect the `render.yaml` and create the web service automatically
 5. Set `TELEGRAM_BOT_TOKEN` environment variable in the web service settings after creation
-
-### Alternative: Supabase
-
-You can also use [Supabase](https://supabase.com) (free tier) for PostgreSQL:
-
-- Create a new project
-- Get connection string from Settings → Database
-- Use the same environment variables
 
 ## Usage
 
 1. Find your bot on Telegram and start a chat
-2. Send `/start` to begin
+2. Send `/start` to begin (first-time users will configure reminder preferences)
 3. Send any URL to save it
-4. The bot will send daily reminders with unread links
+4. The bot will send reminders based on your configured frequency and time
 5. Use `/list` to see saved links, `/read <id>` to mark as read
+6. Use `/settings` to customize reminder frequency, time, and links per reminder
 
 ## Commands
 
-- `/start` - Welcome message and setup
+- `/start` - Welcome message and first-time setup
 - `/help` - Show help
 - `/list` - Show saved links (add "unread" to filter)
 - `/read <id>` - Mark a link as read
 - `/delete <id>` - Delete a link permanently
+- `/settings` - Configure reminder frequency, time, and links per reminder
 - `/support` - Support the project (optional donation)
 
 ## Configuration
 
 Environment variables (in `.env`):
 
-| Variable             | Description                                       | Default                     |
-| -------------------- | ------------------------------------------------- | --------------------------- |
-| `TELEGRAM_BOT_TOKEN` | Your bot token from BotFather                     | (required)                  |
-| `DB_TYPE`            | Database type (`sqlite` or `postgres`)            | `sqlite`                    |
-| `DB_DATABASE`        | SQLite database file path                         | `bookmarks.db`              |
-| `DATABASE_URL`       | PostgreSQL connection URL (required for postgres) | -                           |
-| `DB_SSL`             | Enable SSL for PostgreSQL (`true` or `false`)     | `true`                      |
-| `DB_SYNCHRONIZE`     | Auto-create tables (`true` or `false`)            | `NODE_ENV !== 'production'` |
-| `NODE_ENV`           | Node environment (`development` or `production`)  | `development`               |
-| `REMINDER_CRON`      | Cron expression for reminders                     | `0 9 * * *` (9 AM daily)    |
-| `REMINDER_LIMIT`     | Max links per reminder                            | `5`                         |
+| Variable             | Description                                      | Default                     |
+| -------------------- | ------------------------------------------------ | --------------------------- |
+| `TELEGRAM_BOT_TOKEN` | Your bot token from BotFather                    | (required)                  |
+| `DB_PATH`            | SQLite database file path                        | `database.sqlite`           |
+| `DB_SYNCHRONIZE`     | Auto-create tables (`true` or `false`)           | `NODE_ENV !== 'production'` |
+| `NODE_ENV`           | Node environment (`development` or `production`) | `development`               |
+
+**Note:** Reminder settings (frequency, time, links per reminder) are now per-user and configurable via `/settings` command. The previous `REMINDER_CRON` and `REMINDER_LIMIT` environment variables are no longer used. Default reminder time is 09:00 AM Myanmar time (02:30 UTC).
+
+Reminders are checked every minute to ensure precise delivery according to each user's configured time (UTC).
 
 ## Data Privacy
 
