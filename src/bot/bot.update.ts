@@ -280,7 +280,7 @@ export class BotUpdate {
 
     const keyboard = Markup.inlineKeyboard([
       [Markup.button.callback('🔄 Change Frequency', 'settings_frequency')],
-      [Markup.button.callback('⏰ Change Time (UTC)', 'settings_time')],
+      [Markup.button.callback('⏰ Change Time', 'settings_time')],
       [Markup.button.callback('🔢 Change Links Limit', 'settings_limit')],
       [
         Markup.button.callback(
@@ -467,7 +467,7 @@ export class BotUpdate {
 
     const keyboardRows = [
       [Markup.button.callback('🔄 Change Frequency', 'settings_frequency')],
-      [Markup.button.callback('⏰ Change Time (UTC)', 'settings_time')],
+      [Markup.button.callback('⏰ Change Time', 'settings_time')],
       [Markup.button.callback('🔢 Change Links Limit', 'settings_limit')],
     ];
 
