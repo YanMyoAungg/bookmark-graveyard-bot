@@ -10,8 +10,8 @@ services:
     region: singapore # Change to your preferred region
     plan: free
     branch: main
-    buildCommand: npm install --force && npm rebuild sqlite3 && npm run build
-    startCommand: npm run start:prod
+    buildCommand: pnpm install && pnpm run build
+    startCommand: pnpm run start:prod
     envVars:
       - key: TELEGRAM_BOT_TOKEN
         sync: false # Must be set manually in Render dashboard
