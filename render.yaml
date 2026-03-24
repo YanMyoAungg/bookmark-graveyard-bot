@@ -10,8 +10,8 @@ services:
     region: singapore # Change to your preferred region
     plan: free
     branch: main
-    buildCommand: pnpm install --force && pnpm rebuild sqlite3 && pnpm run build
-    startCommand: pnpm run start:prod
+    buildCommand: npm install --force && npm rebuild sqlite3 && npm run build
+    startCommand: npm run start:prod
     envVars:
       - key: TELEGRAM_BOT_TOKEN
         sync: false # Must be set manually in Render dashboard
@@ -21,5 +21,3 @@ services:
         value: database.sqlite
       - key: DB_SYNCHRONIZE
         value: 'true' # Auto-create tables (data loss on redeploy is acceptable)
-      - key: PNPM_IGNORE_SCRIPTS
-        value: '0' # Allow postinstall scripts for better-sqlite3
