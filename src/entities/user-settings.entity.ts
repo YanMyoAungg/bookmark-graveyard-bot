@@ -16,7 +16,7 @@ export class UserSettings {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @OneToOne(() => User, (user: User) => user.settings, {
+  @OneToOne(() => User, (user: User): UserSettings => user.settings, {
     onDelete: 'CASCADE',
   })
   @JoinColumn()

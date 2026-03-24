@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
+import * as sqlite3 from 'sqlite3';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { BookmarksModule } from './bookmarks/bookmarks.module';
@@ -27,6 +28,7 @@ import { ReminderModule } from './reminder/reminder.module';
         // SQLite configuration
         return {
           type: 'sqlite',
+          driver: sqlite3,
           database: configService.get<string>('DB_PATH', 'database.sqlite'),
           entities: [__dirname + '/**/*.entity{.ts,.js}'],
           synchronize,
