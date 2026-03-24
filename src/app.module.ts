@@ -24,9 +24,9 @@ import { ReminderModule } from './reminder/reminder.module';
             ? synchronizeEnv === 'true'
             : configService.get<string>('NODE_ENV') !== 'production';
 
-        // SQLite configuration (using better-sqlite3 for better compatibility)
+        // SQLite configuration
         return {
-          type: 'better-sqlite3',
+          type: 'sqlite',
           database: configService.get<string>('DB_PATH', 'database.sqlite'),
           entities: [__dirname + '/**/*.entity{.ts,.js}'],
           synchronize,

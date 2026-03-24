@@ -10,7 +10,7 @@ services:
     region: singapore # Change to your preferred region
     plan: free
     branch: main
-    buildCommand: pnpm install --force && pnpm rebuild better-sqlite3 && pnpm run build
+    buildCommand: pnpm install --force && pnpm rebuild sqlite3 && pnpm run build
     startCommand: pnpm run start:prod
     envVars:
       - key: TELEGRAM_BOT_TOKEN
