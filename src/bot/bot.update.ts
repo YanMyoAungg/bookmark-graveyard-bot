@@ -4,6 +4,8 @@ import { UsersService } from '../bookmarks/users.service';
 import { LinksService } from '../bookmarks/links.service';
 import { UserSettingsService } from '../bookmarks/user-settings.service';
 import { User } from '../entities/user.entity';
+import { ReminderFrequency } from '../entities/user-settings.entity';
+import { InlineKeyboardButton } from 'telegraf/types';
 
 @Update()
 export class BotUpdate {
@@ -262,6 +264,9 @@ export class BotUpdate {
       return;
     }
     const settings = await this.userSettingsService.getSettingsForUser(user);
+    const mmtTime = this.userSettingsService.convertUTCToMMT(
+      settings.reminderTime,
+    );
 
     const frequencyText = {
       daily: 'Daily',
@@ -273,7 +278,7 @@ export class BotUpdate {
     const message =
       `⚙️ **Your Reminder Settings**\n\n` +
       `**Frequency:** ${frequencyText}\n` +
-      `**Time (UTC):** ${settings.reminderTime}\n` +
+      `**Time (Myanmar Time):** ${mmtTime}\n` +
       `**Links per reminder:** ${settings.reminderLimit}\n` +
       `**Setup complete:** ${settings.isSetupComplete ? 'Yes' : 'No'}\n\n` +
       `Use buttons below to change settings.`;
@@ -367,21 +372,19 @@ export class BotUpdate {
     if (!ctx.from || !ctx.callbackQuery) return;
     const user = await this.usersService.findByTelegramId(ctx.from.id);
     if (!user) return;
-    const settings = await this.userSettingsService.getSettingsForUser(user);
-    const frequencies: Array<'daily' | 'weekly' | 'biweekly' | 'monthly'> = [
-      'daily',
-      'weekly',
-      'biweekly',
-      'monthly',
-    ];
-    const currentIndex = frequencies.indexOf(settings.reminderFrequency);
-    const nextIndex = (currentIndex + 1) % frequencies.length;
-    const nextFrequency = frequencies[nextIndex];
+
     await this.userSettingsService.updateSettings(user, {
-      reminderFrequency: nextFrequency,
+      pendingAction: 'frequency',
     });
-    await ctx.answerCbQuery(`Frequency set to ${nextFrequency}`);
-    await this.showSettings(ctx, user);
+    await ctx.reply(
+      'Please send the desired frequency. Valid options are:\n' +
+        '• `daily`\n' +
+        '• `weekly`\n' +
+        '• `biweekly`\n' +
+        '• `monthly`',
+      { parse_mode: 'Markdown' },
+    );
+    await ctx.answerCbQuery();
   }
 
   @Action('settings_limit')
@@ -389,16 +392,12 @@ export class BotUpdate {
     if (!ctx.from || !ctx.callbackQuery) return;
     const user = await this.usersService.findByTelegramId(ctx.from.id);
     if (!user) return;
-    const settings = await this.userSettingsService.getSettingsForUser(user);
-    const limits = [3, 4, 5, 6, 7, 8, 9, 10];
-    const currentIndex = limits.indexOf(settings.reminderLimit);
-    const nextIndex = (currentIndex + 1) % limits.length;
-    const nextLimit = limits[nextIndex];
+
     await this.userSettingsService.updateSettings(user, {
-      reminderLimit: nextLimit,
+      pendingAction: 'limit',
     });
-    await ctx.answerCbQuery(`Limit set to ${nextLimit}`);
-    await this.showSettings(ctx, user);
+    await ctx.reply('Please send the number of links per reminder (3-10).');
+    await ctx.answerCbQuery();
   }
 
   @Action('settings_time')
@@ -406,15 +405,16 @@ export class BotUpdate {
     if (!ctx.from || !ctx.callbackQuery) return;
     const user = await this.usersService.findByTelegramId(ctx.from.id);
     if (!user) return;
-    const settings = await this.userSettingsService.getSettingsForUser(user);
-    const [hour, minute] = settings.reminderTime.split(':').map(Number);
-    const newHour = (hour + 1) % 24;
-    const newTime = `${newHour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+
     await this.userSettingsService.updateSettings(user, {
-      reminderTime: newTime,
+      pendingAction: 'time',
     });
-    await ctx.answerCbQuery(`Time set to ${newTime} UTC`);
-    await this.showSettings(ctx, user);
+    await ctx.reply(
+      'Please send the reminder time in **Myanmar Time** (24-hour format, HH:MM).\n' +
+        'Example: `09:30` for 9:30 AM.',
+      { parse_mode: 'Markdown' },
+    );
+    await ctx.answerCbQuery();
   }
 
   @Action('settings_setup_complete')
@@ -447,22 +447,26 @@ export class BotUpdate {
       monthly: 'Monthly',
     }[settings.reminderFrequency];
 
+    const mmtTime = this.userSettingsService.convertUTCToMMT(
+      settings.reminderTime,
+    );
+
     let message = '';
     if (!settings.isSetupComplete) {
       message =
         `⚙️ **First-time Setup**\n\n` +
         `Please configure your reminder preferences:\n\n` +
         `**Frequency:** ${frequencyText}\n` +
-        `**Time (UTC):** ${settings.reminderTime}\n` +
+        `**Time (Myanmar Time):** ${mmtTime}\n` +
         `**Links per reminder:** ${settings.reminderLimit}\n\n` +
-        `Use the buttons below to adjust each setting. When you're satisfied, click "✅ Finish Setup".`;
+        `Click a button to change a setting. The bot will ask you for the new value.`;
     } else {
       message =
         `⚙️ **Your Reminder Settings**\n\n` +
         `**Frequency:** ${frequencyText}\n` +
-        `**Time (UTC):** ${settings.reminderTime}\n` +
+        `**Time (Myanmar Time):** ${mmtTime}\n` +
         `**Links per reminder:** ${settings.reminderLimit}\n\n` +
-        `Use buttons below to change settings.`;
+        `Click a button to change a setting.`;
     }
 
     const keyboardRows = [
@@ -474,13 +478,6 @@ export class BotUpdate {
     if (!settings.isSetupComplete) {
       keyboardRows.push([
         Markup.button.callback('✅ Finish Setup', 'settings_setup_complete'),
-      ]);
-    } else {
-      keyboardRows.push([
-        Markup.button.callback(
-          '✅ Mark Setup Complete',
-          'settings_setup_complete',
-        ),
       ]);
     }
 
@@ -500,20 +497,76 @@ export class BotUpdate {
   async onText(@Ctx() ctx: Context) {
     if (!ctx.from || !ctx.message || !('text' in ctx.message)) return;
 
+    const user = await this.usersService.findOrCreate(
+      ctx.from.id,
+      ctx.from.username,
+      ctx.from.first_name,
+      ctx.from.last_name,
+    );
+    const settings = await this.userSettingsService.getSettingsForUser(user);
+
+    // Check for pending settings action
+    if (settings.pendingAction) {
+      const text = ctx.message.text.trim().toLowerCase();
+      try {
+        if (settings.pendingAction === 'frequency') {
+          const valid = ['daily', 'weekly', 'biweekly', 'monthly'];
+          if (!valid.includes(text)) {
+            await ctx.reply(
+              'Invalid frequency. Please send daily, weekly, biweekly, or monthly.',
+            );
+            return;
+          }
+          await this.userSettingsService.updateSettings(user, {
+            reminderFrequency: text as ReminderFrequency,
+            pendingAction: null,
+          });
+          await ctx.reply(`Frequency updated to ${text} ✅`);
+        } else if (settings.pendingAction === 'time') {
+          const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+          if (!timeRegex.test(text)) {
+            await ctx.reply(
+              'Invalid time format. Please use HH:MM (24-hour format). Example: 09:30',
+            );
+            return;
+          }
+          const utcTime = this.userSettingsService.convertMMTToUTC(text);
+          await this.userSettingsService.updateSettings(user, {
+            reminderTime: utcTime,
+            pendingAction: null,
+          });
+          await ctx.reply(`Reminder time updated to ${text} (Myanmar Time) ✅`);
+        } else if (settings.pendingAction === 'limit') {
+          const limit = parseInt(text, 10);
+          if (isNaN(limit) || limit < 3 || limit > 10) {
+            await ctx.reply(
+              'Invalid number. Please send a number between 3 and 10.',
+            );
+            return;
+          }
+          await this.userSettingsService.updateSettings(user, {
+            reminderLimit: limit,
+            pendingAction: null,
+          });
+          await ctx.reply(`Reminder limit updated to ${limit} ✅`);
+        }
+        await this.showSettings(ctx, user);
+        return;
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        await ctx.reply(`Error: ${errorMessage}`);
+        return;
+      }
+    }
+
     const text = ctx.message.text;
     const url = this.extractUrl(text);
     if (!url) {
-      // Not a URL, ignore
       return;
     }
 
     try {
-      const user = await this.usersService.findOrCreate(
-        ctx.from.id,
-        ctx.from.username,
-        ctx.from.first_name,
-        ctx.from.last_name,
-      );
       const { link, isNew, restored } = await this.linksService.create(
         url,
         user,
@@ -532,28 +585,18 @@ export class BotUpdate {
         }
       }
 
-      // If restored, treat as new from user perspective (silently unmarked)
-
       const displayText = link.title || link.url;
       const message = `Link ${action} (ID: ${link.id})! ${emoji}\n${displayText}`;
 
-      // Build buttons based on link state
-      type ButtonType = ReturnType<typeof Markup.button.callback>;
-      const buttons: ButtonType[] = [];
-
-      // Only show "Mark as Read" button if link is unread
+      const buttons: InlineKeyboardButton[] = [];
       if (!link.isRead) {
         buttons.push(
           Markup.button.callback('✅ Mark as Read', `mark_read_${link.id}`),
         );
       }
-
-      // Always show Delete button
       buttons.push(Markup.button.callback('🗑️ Delete', `delete_${link.id}`));
 
-      // Create keyboard with buttons in a row (or multiple rows if needed)
       const keyboard = Markup.inlineKeyboard([buttons]);
-
       await ctx.reply(message, keyboard);
     } catch (error) {
       if (error instanceof Error && error.message === 'DUPLICATE_UNREAD_LINK') {
@@ -561,7 +604,9 @@ export class BotUpdate {
           `You already have this link saved and unread! Use /list to see your saved links.`,
         );
       } else {
-        console.error('Failed to save link:', error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        console.error('Failed to save link:', errorMessage);
         await ctx.reply(`Failed to save link. Please try again later.`);
       }
     }
@@ -573,7 +618,6 @@ export class BotUpdate {
     if (!match) return null;
 
     const url = match[0];
-    // Basic validation
     try {
       new URL(url);
       return url;

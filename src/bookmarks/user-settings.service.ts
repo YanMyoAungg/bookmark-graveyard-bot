@@ -47,19 +47,10 @@ export class UserSettingsService {
       reminderTime: string;
       reminderLimit: number;
       isSetupComplete: boolean;
+      pendingAction: 'frequency' | 'time' | 'limit' | null;
     }>,
   ): Promise<UserSettings> {
     const settings = await this.getSettingsForUser(user);
-
-    // Validate time format (HH:MM)
-    if (updates.reminderTime) {
-      const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
-      if (!timeRegex.test(updates.reminderTime)) {
-        throw new Error(
-          'Invalid time format. Use HH:MM (24-hour format, UTC).',
-        );
-      }
-    }
 
     // Validate limit (3-10)
     if (updates.reminderLimit !== undefined) {
@@ -88,15 +79,13 @@ export class UserSettingsService {
     const currentHour = currentDate.getUTCHours();
     const currentMinute = currentDate.getUTCMinutes();
 
-    // Only send if we're at the exact hour and minute (simple check)
-    // In production, you might want to allow a window (e.g., within 5 minutes)
+    // Check frequency
     if (currentHour !== targetHour || currentMinute !== targetMinute) {
       return false;
     }
 
-    // Check frequency
     if (!settings.lastReminderSent) {
-      return true; // Never sent before
+      return true;
     }
 
     const lastSent = settings.lastReminderSent;
@@ -112,10 +101,46 @@ export class UserSettingsService {
       case 'biweekly':
         return daysDiff >= 14;
       case 'monthly':
-        // Approximate month as 30 days
         return daysDiff >= 30;
       default:
         return false;
     }
+  }
+
+  // Helper to convert Myanmar Time (MMT) string to UTC string
+  convertMMTToUTC(mmtTime: string): string {
+    const [h, m] = mmtTime.split(':').map(Number);
+    // MMT is UTC + 6:30
+    // UTC = MMT - 6:30
+    let utcMinutes = m - 30;
+    let utcHours = h - 6;
+
+    if (utcMinutes < 0) {
+      utcMinutes += 60;
+      utcHours -= 1;
+    }
+    if (utcHours < 0) {
+      utcHours += 24;
+    }
+
+    return `${utcHours.toString().padStart(2, '0')}:${utcMinutes.toString().padStart(2, '0')}`;
+  }
+
+  // Helper to convert UTC string to Myanmar Time (MMT) string
+  convertUTCToMMT(utcTime: string): string {
+    const [h, m] = utcTime.split(':').map(Number);
+    // MMT = UTC + 6:30
+    let mmtMinutes = m + 30;
+    let mmtHours = h + 6;
+
+    if (mmtMinutes >= 60) {
+      mmtMinutes -= 60;
+      mmtHours += 1;
+    }
+    if (mmtHours >= 24) {
+      mmtHours -= 24;
+    }
+
+    return `${mmtHours.toString().padStart(2, '0')}:${mmtMinutes.toString().padStart(2, '0')}`;
   }
 }

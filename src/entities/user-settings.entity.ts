@@ -52,6 +52,12 @@ export class UserSettings {
   })
   lastReminderSent?: Date;
 
+  @Column({
+    type: 'varchar',
+    nullable: true,
+  })
+  pendingAction?: 'frequency' | 'time' | 'limit' | null;
+
   @CreateDateColumn()
   createdAt: Date;
 
