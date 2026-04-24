@@ -24,7 +24,6 @@ import { ReminderModule } from './reminder/reminder.module';
             : configService.get<string>('NODE_ENV') !== 'production';
 
         const databaseUrl = configService.get<string>('DATABASE_URL');
-        
         if (!databaseUrl) {
           throw new Error('DATABASE_URL is not defined');
         }
@@ -34,9 +33,12 @@ import { ReminderModule } from './reminder/reminder.module';
           url: databaseUrl,
           entities: [__dirname + '/**/*.entity{.ts,.js}'],
           synchronize,
+          ssl: {
+            rejectUnauthorized: false,
+          },
           extra: {
             ssl: {
-              rejectUnauthorized: false, // Required for cloud providers like Supabase/Neon/Aiven
+              rejectUnauthorized: false,
             },
           },
         };
