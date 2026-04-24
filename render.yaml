@@ -5,19 +5,22 @@
 
 services:
   - type: web
+    runtime: node
     name: bookmark-graveyard-bot
-    env: node
     region: singapore # Change to your preferred region
     plan: free
     branch: main
     buildCommand: pnpm install && pnpm run build
     startCommand: pnpm run start:prod
     envVars:
+      - key: DATABASE_URL
+        sync: false # Set this in Render dashboard (e.g. from Supabase or Neon)
       - key: TELEGRAM_BOT_TOKEN
-        sync: false # Must be set manually in Render dashboard
+        sync: false
       - key: NODE_ENV
         value: production
-      - key: DB_PATH
-        value: database.sqlite
       - key: DB_SYNCHRONIZE
-        value: 'true' # Auto-create tables (data loss on redeploy is acceptable)
+        value: 'true'
+      - key: NODE_VERSION
+        value: 20
+

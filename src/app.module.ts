@@ -25,7 +25,20 @@ import { ReminderModule } from './reminder/reminder.module';
             ? synchronizeEnv === 'true'
             : configService.get<string>('NODE_ENV') !== 'production';
 
-        // SQLite configuration
+        const databaseUrl = configService.get<string>('DATABASE_URL');
+        if (databaseUrl) {
+          return {
+            type: 'postgres',
+            url: databaseUrl,
+            entities: [__dirname + '/**/*.entity{.ts,.js}'],
+            synchronize,
+            ssl: {
+              rejectUnauthorized: false, // Required for cloud providers like Supabase/Neon
+            },
+          };
+        }
+
+        // SQLite configuration (for local dev)
         return {
           type: 'sqlite',
           driver: sqlite3,
