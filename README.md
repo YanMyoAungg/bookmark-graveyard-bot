@@ -32,7 +32,7 @@ People save useful content (Facebook posts, articles, videos) but rarely revisit
 ## Tech Stack
 
 - NestJS (TypeScript)
-- SQLite
+- Postgres
 - Telegraf (Telegram bot framework)
 - TypeORM
 
@@ -74,9 +74,7 @@ pnpm run start:prod
 
 ## Deployment on Render (Free Tier)
 
-Render's free tier is suitable for hosting this bot. The bot uses SQLite for data storage.
-
-**Important**: SQLite files are ephemeral on Render - your data will be lost when the service restarts or redeploys. This is acceptable for testing or if you don't need persistent data.
+Render's free tier is suitable for hosting this bot. The bot uses Postgres for data storage.
 
 ### 1. Create a Render account
 

@@ -1,13 +1,12 @@
 # Render Blueprint for Bookmark Graveyard
-# Deploys the Telegram bot web service with SQLite database
+# Deploys the Telegram bot web service with Postgres database
 # Documentation: https://render.com/docs/blueprint-spec
-# Note: SQLite files are ephemeral on Render (data lost on redeploy)
 
 services:
   - type: web
     runtime: node
     name: bookmark-graveyard-bot
-    region: singapore # Change to your preferred region
+    region: singapore
     plan: free
     branch: main
     buildCommand: pnpm install && pnpm run build
