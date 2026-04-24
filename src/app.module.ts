@@ -28,9 +28,13 @@ import { ReminderModule } from './reminder/reminder.module';
           throw new Error('DATABASE_URL is not defined');
         }
 
+        // Strip query parameters (like ?sslmode=require) to prevent them from 
+        // overriding our manual SSL configuration below.
+        const connectionString = databaseUrl.split('?')[0];
+
         return {
           type: 'postgres',
-          url: databaseUrl,
+          url: connectionString,
           entities: [__dirname + '/**/*.entity{.ts,.js}'],
           synchronize,
           ssl: {
