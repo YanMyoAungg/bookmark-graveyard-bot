@@ -34,8 +34,10 @@ import { ReminderModule } from './reminder/reminder.module';
           url: databaseUrl,
           entities: [__dirname + '/**/*.entity{.ts,.js}'],
           synchronize,
-          ssl: {
-            rejectUnauthorized: false,
+          extra: {
+            ssl: {
+              rejectUnauthorized: false, // Required for cloud providers like Supabase/Neon/Aiven
+            },
           },
         };
       },
