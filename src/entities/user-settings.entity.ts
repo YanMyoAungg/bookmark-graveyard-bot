@@ -47,7 +47,7 @@ export class UserSettings {
   isSetupComplete: boolean;
 
   @Column({
-    type: 'datetime',
+    type: 'timestamp',
     nullable: true,
   })
   lastReminderSent?: Date;
