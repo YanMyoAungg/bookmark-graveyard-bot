@@ -23,3 +23,7 @@ services:
       - key: NODE_VERSION
         value: 20
 
+      - key: SERVICE_URL
+        sync: false # Set to your Render URL, e.g. https://bookmark-graveyard-bot.onrender.com
+
+

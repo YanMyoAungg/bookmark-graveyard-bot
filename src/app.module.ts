@@ -6,6 +6,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { BookmarksModule } from './bookmarks/bookmarks.module';
 import { BotModule } from './bot/bot.module';
+import { HealthModule } from './health/health.module';
 import { ReminderModule } from './reminder/reminder.module';
 
 @Module({
@@ -51,6 +52,7 @@ import { ReminderModule } from './reminder/reminder.module';
     BookmarksModule,
     BotModule,
     ReminderModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
