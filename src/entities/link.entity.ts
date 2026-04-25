@@ -4,8 +4,12 @@ import {
   Column,
   CreateDateColumn,
   ManyToOne,
+  ManyToMany,
+  OneToMany,
 } from 'typeorm';
 import { User } from './user.entity';
+import { Tag } from './tag.entity';
+import { LinkInteraction } from './link-interaction.entity';
 
 @Entity()
 export class Link {
@@ -26,4 +30,10 @@ export class Link {
 
   @ManyToOne(() => User, (user) => user.links)
   user: User;
+
+  @ManyToMany(() => Tag, (tag) => tag.links)
+  tags: Tag[];
+
+  @OneToMany(() => LinkInteraction, (interaction) => interaction.link)
+  interactions: LinkInteraction[];
 }

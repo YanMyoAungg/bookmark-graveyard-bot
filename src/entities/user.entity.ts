@@ -8,6 +8,9 @@ import {
 } from 'typeorm';
 import { Link } from './link.entity';
 import { UserSettings } from './user-settings.entity';
+import { Tag } from './tag.entity';
+import { LinkInteraction } from './link-interaction.entity';
+import { ReadingPattern } from './reading-pattern.entity';
 
 @Entity()
 export class User {
@@ -34,4 +37,13 @@ export class User {
 
   @OneToOne(() => UserSettings, (settings) => settings.user)
   settings: UserSettings;
+
+  @OneToMany(() => Tag, (tag) => tag.user)
+  tags: Tag[];
+
+  @OneToMany(() => LinkInteraction, (interaction) => interaction.user)
+  interactions: LinkInteraction[];
+
+  @OneToOne(() => ReadingPattern, (pattern) => pattern.user)
+  readingPattern: ReadingPattern;
 }
