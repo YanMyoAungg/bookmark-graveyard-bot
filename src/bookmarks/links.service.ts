@@ -68,6 +68,32 @@ export class LinksService {
     return url.toLowerCase().trim().replace(/\/+$/, '');
   }
 
+  private async fetchAllLinksForUser(
+    user: User,
+    options?: { unreadOnly?: boolean; batchSize?: number },
+  ): Promise<Link[]> {
+    const unreadOnly = options?.unreadOnly ?? false;
+    const batchSize = options?.batchSize ?? 200;
+    let skip = 0;
+    const allLinks: Link[] = [];
+
+    while (true) {
+      const batch = await this.findByUser(user, {
+        skip,
+        take: batchSize,
+        unreadOnly,
+      });
+      if (batch.length === 0) {
+        break;
+      }
+
+      allLinks.push(...batch);
+      skip += batch.length;
+    }
+
+    return allLinks;
+  }
+
   async create(
     url: string,
     user: User,
@@ -164,7 +190,7 @@ export class LinksService {
     this.logger.debug(
       `Fast queries failed, performing full normalization check for: ${url}`,
     );
-    const userLinks = await this.findByUser(user, { take: 200 });
+    const userLinks = await this.fetchAllLinksForUser(user, { batchSize: 200 });
     const fullyNormalizedInput = this.normalizeUrl(url);
 
     for (const link of userLinks) {
@@ -231,7 +257,7 @@ export class LinksService {
 
   async deduplicateForUser(user: User): Promise<number> {
     this.logger.log(`Starting deduplication for user ${user.id}`);
-    const userLinks = await this.findByUser(user, { take: 500 });
+    const userLinks = await this.fetchAllLinksForUser(user, { batchSize: 200 });
 
     if (userLinks.length <= 1) {
       this.logger.log(

@@ -5,6 +5,25 @@ import { LinksService } from '../../bookmarks/links.service';
 
 @Update()
 export class ListCommand {
+  private getButtonLabel(link: { title?: string; url: string }): string {
+    const maxLength = 40;
+    let source = link.title?.trim();
+
+    if (!source || source === link.url) {
+      try {
+        source = new URL(link.url).hostname.replace(/^www\./, '');
+      } catch {
+        source = link.url;
+      }
+    }
+
+    const compact = source.replace(/\s+/g, ' ').trim();
+    if (compact.length <= maxLength) {
+      return compact;
+    }
+    return `${compact.slice(0, maxLength - 3)}...`;
+  }
+
   constructor(
     private readonly usersService: UsersService,
     private readonly linksService: LinksService,
@@ -52,7 +71,7 @@ export class ListCommand {
       .filter((link) => !link.isRead)
       .map((link) => [
         Markup.button.callback(
-          `✅ Mark as Read (ID: ${link.id})`,
+          `✅ Read: ${this.getButtonLabel(link)}`,
           `mark_read_${link.id}`,
         ),
       ]);

@@ -1,67 +1,65 @@
 # Bookmark Graveyard
 
-A Telegram bot that helps you revisit saved content instead of forgetting it.
+A Telegram bot that helps you revisit saved links instead of letting them disappear into your "saved for later" pile.
 
-**Open source, community-driven, and free forever.** Built for developers who want to actually learn from saved content.
+Open source, community-driven, and free forever.
 
-## Open Source & Community
+## Why This Exists
 
-This project is **100% open source** under the MIT license. The community owns it—feel free to:
+Most people save useful content and rarely come back to it. Bookmark Graveyard solves this by:
 
-- Use it for personal or commercial projects
-- Modify, extend, or redistribute the code
-- Host your own instance
-- Submit improvements via pull requests
-- Fork and create your own version
-- Translate, document, or create tutorials
-
-No restrictions. No warranties. Just code that belongs to everyone.
-
-## Problem
-
-People save useful content (Facebook posts, articles, videos) but rarely revisit them. This bot solves that by storing links and sending daily reminders to actually read them.
+- saving links directly from chat
+- reminding you at your preferred schedule
+- giving quick actions to mark links as read or delete them
 
 ## Features
 
-- **Save links**: Send any URL to the bot (Facebook, articles, etc.)
-- **Customizable reminders**: Set frequency (daily/weekly/bi-weekly/monthly), time (UTC), and links per reminder (3-10)
-- **Manage links**: List saved links, mark as read
-- **Simple**: No accounts, just Telegram
-- **First-time setup**: Interactive configuration of reminder preferences
+- Save any URL by sending it to the bot
+- Automatic title extraction for better readability
+- Duplicate-aware saving (including restore-from-read behavior)
+- Per-user reminder settings (`daily`, `weekly`, `biweekly`, `monthly`)
+- Reminder time customization (stored as UTC, configured in Myanmar time UX)
+- Smart list UI with inline "Mark as Read" actions
+- Optional auto-tagging by domain and tag-based browsing
+- Trending command for most-saved links
 
 ## Tech Stack
 
-- NestJS (TypeScript)
-- Postgres
-- Telegraf (Telegram bot framework)
+- NestJS + TypeScript
+- Telegraf / `nestjs-telegraf`
 - TypeORM
+- PostgreSQL
+- Cron jobs via `@nestjs/schedule`
 
-## Setup
+## Quick Start
 
-### 1. Create a Telegram bot
+### 1) Create your Telegram bot
 
-1. Open Telegram and search for [@BotFather](https://t.me/botfather)
-2. Send `/newbot` and follow instructions
-3. Copy the bot token (looks like `1234567890:ABCdefGHIjklMNOpqrsTUVwxyz`)
+1. Open [@BotFather](https://t.me/botfather)
+2. Run `/newbot`
+3. Copy your bot token
 
-### 2. Configure environment
+### 2) Configure environment
 
 ```bash
 cp .env.example .env
-# Edit .env and add your bot token
 ```
 
-### 3. Install dependencies
+Required values in `.env`:
+
+- `TELEGRAM_BOT_TOKEN`
+- `DATABASE_URL`
+
+Optional:
+
+- `DB_SYNCHRONIZE` (defaults to `true` outside production)
+- `NODE_ENV`
+- `SERVICE_URL` (used by keep-alive ping job)
+
+### 3) Install and run
 
 ```bash
 pnpm install
-```
-
-### 4. Run the bot
-
-Development (auto-restart on changes):
-
-```bash
 pnpm run start:dev
 ```
 
@@ -72,132 +70,75 @@ pnpm run build
 pnpm run start:prod
 ```
 
-## Deployment on Render (Free Tier)
-
-Render's free tier is suitable for hosting this bot. The bot uses Postgres for data storage.
-
-### 1. Create a Render account
-
-- Sign up at [render.com](https://render.com) (GitHub login recommended)
-
-### 2. Deploy the bot as a Web Service
-
-- In Render Dashboard, click "New +" → "Web Service"
-- Connect your GitHub repository
-- Configure:
-  - **Name**: `bookmark‑graveyard‑bot`
-  - **Environment**: `Node`
-  - **Region**: Choose nearest
-  - **Branch**: `main`
-  - **Build Command**: `pnpm install && pnpm run build`
-  - **Start Command**: `pnpm run start:prod`
-- Add environment variables:
-  - `TELEGRAM_BOT_TOKEN`: Your bot token (required)
-  - `NODE_ENV`: `production`
-  - `DB_PATH`: `database.sqlite` (SQLite database file path)
-  - Note: Reminder settings are now per-user and configurable via `/settings` command
-- Click "Create Web Service"
-
-### 3. Wait for deployment
-
-- Render will build and deploy your bot
-- Check logs for any errors
-- The bot will start polling Telegram
-
-### 4. Keep the service awake (Free tier)
-
-Render's free tier services sleep after 15 minutes of inactivity. To keep your bot awake:
-
-1. Get your Render service URL (e.g., `https://bookmark-graveyard-bot.onrender.com`)
-2. Use a free uptime monitor like [UptimeRobot](https://uptimerobot.com) to ping the root endpoint (`GET /`) every 5 minutes
-3. This will prevent the service from sleeping and ensure the bot can poll Telegram continuously
-
-Alternatively, upgrade to Render's "Always On" paid plan.
-
-### Option 2: Blueprint deployment (automated)
-
-This repository includes a `render.yaml` blueprint file that automates deployment:
-
-1. Fork or push this repository to your GitHub account
-2. In Render Dashboard, click "New +" → "Blueprint"
-3. Connect your repository
-4. Render will detect the `render.yaml` and create the web service automatically
-5. Set `TELEGRAM_BOT_TOKEN` environment variable in the web service settings after creation
-
-## Usage
-
-1. Find your bot on Telegram and start a chat
-2. Send `/start` to begin (first-time users will configure reminder preferences)
-3. Send any URL to save it
-4. The bot will send reminders based on your configured frequency and time
-5. Use `/list` to see saved links, `/read <id>` to mark as read
-6. Use `/settings` to customize reminder frequency, time, and links per reminder
-
 ## Commands
 
-- `/start` - Welcome message and first-time setup
-- `/help` - Show help
-- `/list` - Show saved links (add "unread" to filter)
-- `/read <id>` - Mark a link as read
-- `/delete <id>` - Delete a link permanently
-- `/settings` - Configure reminder frequency, time, and links per reminder
-- `/support` - Support the project (optional donation)
+- `/start` - greet user and run first-time setup
+- `/help` - show help
+- `/list` - list latest saved links
+- `/list unread` - list unread links only
+- `/read <id>` - mark one link as read
+- `/delete <id>` - delete one link
+- `/settings` - configure reminder frequency, time, and reminder size
+- `/tags` - show tag usage
+- `/linksbytag <tag>` - list links under a tag
+- `/stats` - show personal reading activity stats
+- `/trending` - show top saved links this week
+- `/deduplicate` - remove duplicate links for current user
+- `/support` - donation / support info
 
-## Configuration
+## Environment Variables
 
-Environment variables (in `.env`):
+| Variable | Description | Required |
+| --- | --- | --- |
+| `TELEGRAM_BOT_TOKEN` | Telegram bot token from BotFather | Yes |
+| `DATABASE_URL` | PostgreSQL connection string | Yes |
+| `DB_SYNCHRONIZE` | TypeORM auto schema sync (`true`/`false`) | No |
+| `NODE_ENV` | Runtime environment (`development`/`production`) | No |
+| `SERVICE_URL` | Public service URL for scheduled self-ping | No |
 
-| Variable             | Description                                      | Default                     |
-| -------------------- | ------------------------------------------------ | --------------------------- |
-| `TELEGRAM_BOT_TOKEN` | Your bot token from BotFather                    | (required)                  |
-| `DB_PATH`            | SQLite database file path                        | `database.sqlite`           |
-| `DB_SYNCHRONIZE`     | Auto-create tables (`true` or `false`)           | `NODE_ENV !== 'production'` |
-| `NODE_ENV`           | Node environment (`development` or `production`) | `development`               |
+Notes:
 
-**Note:** Reminder settings (frequency, time, links per reminder) are now per-user and configurable via `/settings` command. The previous `REMINDER_CRON` and `REMINDER_LIMIT` environment variables are no longer used. Default reminder time is 09:00 AM Myanmar time (02:30 UTC).
+- Reminder preferences are stored per user and managed via `/settings`.
+- Legacy `REMINDER_CRON` and `REMINDER_LIMIT` env vars are no longer used.
 
-Reminders are checked every minute to ensure precise delivery according to each user's configured time (UTC).
+## Deployment (Render)
 
-## Data Privacy
+This repo includes `render.yaml` for Blueprint deployments.
 
-- Stores only Telegram user ID and optional username
-- Stores only links you send
-- No personal data collected
-- Open source - inspect the code
+Minimum Render env vars:
+
+- `TELEGRAM_BOT_TOKEN`
+- `DATABASE_URL`
+- `NODE_ENV=production`
+
+After deploy:
+
+- verify `/healthz` endpoint responds
+- verify bot can poll and receive updates
 
 ## Development
 
 ```bash
-# Lint code
 pnpm run lint
-
-# Format code
-pnpm run format
-
-# Build
+pnpm run test
 pnpm run build
 ```
 
-## Support
+## Privacy
 
-This project is free and open source, maintained by the community. If you find it useful and want to support its development, you can:
+- Stores Telegram user ID and basic profile fields (username, first/last name)
+- Stores links and related metadata (title, read state, tags, interactions)
+- No analytics SDKs or ad tracking built into this codebase
 
-- Use the `/support` command in the bot to donate via local payment methods (KPay, AYA Pay)
-- Contribute code, documentation, or translations on GitHub
-- Share it with others who might benefit
+## Contributing
 
-Your support helps keep the project alive and free for everyone.
+PRs are welcome. Good first contributions:
+
+- command UX improvements
+- reminder reliability improvements
+- tests for command handlers and services
+- docs and localization improvements
 
 ## License
 
-MIT License – see [LICENSE](LICENSE) for full text.
-
-**You are free to:**
-
-- Use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-- Use for any purpose (personal, commercial, educational, etc.)
-- Change the code and release your own version
-
-**No restrictions.** The only requirement is to include the original copyright notice.
-
-This project is **free as in freedom** – the community owns it, not a corporation.
+MIT - see [LICENSE](LICENSE).

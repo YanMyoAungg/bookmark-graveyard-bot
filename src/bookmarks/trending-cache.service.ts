@@ -26,20 +26,20 @@ export class TrendingCacheService {
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
       interface TrendingRaw {
-        id: number;
+        representativeId: string;
         url: string;
-        title: string;
+        title: string | null;
         count: string;
       }
 
       const trending = await this.linksRepository
         .createQueryBuilder('link')
-        .select('link.url', 'url')
+        .select('MIN(link.id)', 'representativeId')
+        .addSelect('link.url', 'url')
         .addSelect('link.title', 'title')
-        .addSelect('link.id', 'id')
-        .addSelect('COUNT(link.id)', 'count')
+        .addSelect('COUNT(*)', 'count')
         .where('link.createdAt >= :since', { since: sevenDaysAgo })
-        .groupBy('link.id, link.url, link.title')
+        .groupBy('link.url, link.title')
         .orderBy('count', 'DESC')
         .limit(10)
         .getRawMany<TrendingRaw>();
@@ -47,8 +47,13 @@ export class TrendingCacheService {
       await this.trendingCacheRepository.delete({ period });
 
       for (const item of trending) {
+        const representativeId = parseInt(item.representativeId, 10);
+        if (isNaN(representativeId)) {
+          continue;
+        }
+
         const link = await this.linksRepository.findOne({
-          where: { id: item.id },
+          where: { id: representativeId },
         });
         if (!link) continue;
 

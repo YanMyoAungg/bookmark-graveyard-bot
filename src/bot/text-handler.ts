@@ -113,8 +113,7 @@ export class TextHandler {
         }
       }
 
-      const displayText = link.title || link.url;
-      const message = `Link ${action} (ID: ${link.id})! ${emoji}\n${displayText}`;
+      const message = `Link ${action}! ${emoji}`;
 
       const buttons: InlineKeyboardButton[] = [];
       if (!link.isRead) {
