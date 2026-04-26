@@ -22,7 +22,7 @@ export class TextHandler {
     if (!ctx.from || !ctx.message || !('text' in ctx.message)) return;
     const incomingText = ctx.message.text.trim();
 
-    // Let command handlers process slash commands (/settings, /list, etc.)
+    // Let command handlers process slash commands (/setting, /list, etc.)
     // even if a legacy pendingAction exists in the database.
     if (incomingText.startsWith('/')) {
       return;

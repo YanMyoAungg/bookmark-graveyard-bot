@@ -14,7 +14,6 @@ export class BotCommandsService implements OnModuleInit {
         { command: 'start', description: 'Start the bot' },
         { command: 'help', description: 'Show help' },
         { command: 'settings', description: 'Configure reminder settings' },
-        { command: 'setting', description: 'Alias for /settings' },
         { command: 'list', description: 'Show saved links' },
         { command: 'stats', description: 'Show bookmark stats' },
         { command: 'tags', description: 'List your tags' },
