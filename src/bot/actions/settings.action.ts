@@ -6,6 +6,10 @@ import { BotService } from '../bot.service';
 
 @Update()
 export class SettingsAction {
+  private readonly callbackButtonType!: ReturnType<
+    typeof Markup.button.callback
+  >;
+
   private buildFrequencyKeyboard() {
     const rows = [
       [
@@ -43,7 +47,7 @@ export class SettingsAction {
   }
 
   private buildHourKeyboard() {
-    const rows = [];
+    const rows: Array<Array<typeof this.callbackButtonType>> = [];
     for (let hour = 0; hour < 24; hour += 4) {
       rows.push(
         Array.from({ length: 4 }, (_, idx) => {
@@ -53,7 +57,7 @@ export class SettingsAction {
       );
     }
 
-    rows.push([Markup.button.callback('⬅️ Back to Settings', 'settings_back')]);
+    rows.push([Markup.button.callback('⬅️ Back to Settings', 'settings_show')]);
     return Markup.inlineKeyboard(rows);
   }
 
@@ -83,7 +87,7 @@ export class SettingsAction {
   }
 
   private buildMinuteOnesKeyboard(hour: string, tens: string) {
-    const rows = [];
+    const rows: Array<Array<typeof this.callbackButtonType>> = [];
     for (let start = 0; start < 10; start += 5) {
       rows.push(
         Array.from({ length: 5 }, (_, idx) => {
