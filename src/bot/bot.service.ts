@@ -29,14 +29,14 @@ export class BotService {
         `**Frequency:** ${frequencyText}\n` +
         `**Time (Myanmar Time):** ${mmtTime}\n` +
         `**Links per reminder:** ${settings.reminderLimit}\n\n` +
-        `Click a button to change a setting. The bot will ask you for the new value.`;
+        `Click a button to change a setting. Time selection uses guided hour/minute buttons.`;
     } else {
       message =
         `⚙️ **Your Reminder Settings**\n\n` +
         `**Frequency:** ${frequencyText}\n` +
         `**Time (Myanmar Time):** ${mmtTime}\n` +
         `**Links per reminder:** ${settings.reminderLimit}\n\n` +
-        `Click a button to change a setting.`;
+        `Click a button to change a setting. Time selection uses guided hour/minute buttons.`;
     }
 
     const keyboardRows = [

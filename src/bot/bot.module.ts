@@ -18,6 +18,7 @@ import { MarkReadAction } from './actions/mark-read.action';
 import { DeleteAction } from './actions/delete.action';
 import { SettingsAction } from './actions/settings.action';
 import { TextHandler } from './text-handler';
+import { BotCommandsService } from './bot-commands.service';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { TextHandler } from './text-handler';
     DeleteAction,
     SettingsAction,
     TextHandler,
+    BotCommandsService,
   ],
   exports: [BotService],
 })

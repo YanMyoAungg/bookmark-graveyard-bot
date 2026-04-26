@@ -23,4 +23,9 @@ export class SettingsCommand {
     }
     await this.botService.showSettings(ctx, user);
   }
+
+  @Command('setting')
+  async settingAlias(@Ctx() ctx: Context) {
+    await this.settings(ctx);
+  }
 }

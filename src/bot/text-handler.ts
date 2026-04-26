@@ -3,7 +3,6 @@ import { Context, Markup } from 'telegraf';
 import { UsersService } from '../bookmarks/users.service';
 import { LinksService } from '../bookmarks/links.service';
 import { UserSettingsService } from '../bookmarks/user-settings.service';
-import { ReminderFrequency } from '../entities/user-settings.entity';
 import { BotService } from './bot.service';
 import { TagsService } from '../bookmarks/tags.service';
 import { InlineKeyboardButton } from 'telegraf/types';
@@ -31,48 +30,22 @@ export class TextHandler {
     const settings = await this.userSettingsService.getSettingsForUser(user);
 
     if (settings.pendingAction) {
-      const text = ctx.message.text.trim().toLowerCase();
       try {
         if (settings.pendingAction === 'frequency') {
-          const valid = ['daily', 'weekly', 'biweekly', 'monthly'];
-          if (!valid.includes(text)) {
-            await ctx.reply(
-              'Invalid frequency. Please send daily, weekly, biweekly, or monthly.',
-            );
-            return;
-          }
           await this.userSettingsService.updateSettings(user, {
-            reminderFrequency: text as ReminderFrequency,
             pendingAction: null,
           });
-          await ctx.reply(`Frequency updated to ${text} ✅`);
+          await ctx.reply('Please use /settings and tap "Change Frequency".');
         } else if (settings.pendingAction === 'time') {
-          const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
-          if (!timeRegex.test(text)) {
-            await ctx.reply(
-              'Invalid time format. Please use HH:MM (24-hour format). Example: 09:30',
-            );
-            return;
-          }
-          const utcTime = this.userSettingsService.convertMMTToUTC(text);
           await this.userSettingsService.updateSettings(user, {
-            reminderTime: utcTime,
             pendingAction: null,
           });
-          await ctx.reply(`Reminder time updated to ${text} (Myanmar Time) ✅`);
+          await ctx.reply('Please use /settings and tap "Change Time".');
         } else if (settings.pendingAction === 'limit') {
-          const limit = parseInt(text, 10);
-          if (isNaN(limit) || limit < 3 || limit > 10) {
-            await ctx.reply(
-              'Invalid number. Please send a number between 3 and 10.',
-            );
-            return;
-          }
           await this.userSettingsService.updateSettings(user, {
-            reminderLimit: limit,
             pendingAction: null,
           });
-          await ctx.reply(`Reminder limit updated to ${limit} ✅`);
+          await ctx.reply('Please use /settings and tap "Change Links Limit".');
         }
         await this.botService.showSettings(ctx, user);
         return;
@@ -122,7 +95,6 @@ export class TextHandler {
         );
       }
       buttons.push(Markup.button.callback('🗑️ Delete', `delete_${link.id}`));
-
       const keyboard = Markup.inlineKeyboard([buttons]);
       await ctx.reply(message, keyboard);
     } catch (error) {
