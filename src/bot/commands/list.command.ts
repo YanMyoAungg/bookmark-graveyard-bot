@@ -5,11 +5,86 @@ import { LinksService } from '../../bookmarks/links.service';
 
 @Update()
 export class ListCommand {
+  private readonly unextractableTitleText = 'Title is not extractable';
+
+  private normalizeComparableText(text: string): string {
+    return text.toLowerCase().replace(/[^a-z0-9]/g, '');
+  }
+
+  private isGenericOrUnhelpfulTitle(title: string, url: string): boolean {
+    const normalizedTitle = title.trim().toLowerCase();
+    if (!normalizedTitle) {
+      return true;
+    }
+
+    const genericTitles = new Set([
+      'home',
+      'homepage',
+      'login',
+      'log in',
+      'sign in',
+      'dashboard',
+      'website',
+      'untitled',
+      'just a moment...',
+      'facebook',
+      'فيسبوك',
+    ]);
+
+    if (genericTitles.has(normalizedTitle)) {
+      return true;
+    }
+
+    try {
+      const hostname = new URL(url).hostname
+        .replace(/^www\./, '')
+        .toLowerCase();
+
+      const hostnameComparable = this.normalizeComparableText(hostname);
+      const titleComparable = this.normalizeComparableText(normalizedTitle);
+
+      // If the title is effectively just the site/domain name, it is not useful.
+      if (titleComparable && titleComparable === hostnameComparable) {
+        return true;
+      }
+
+      const hostnameParts = hostname.split('.');
+      if (hostnameParts.length >= 2) {
+        const domainLabel = hostnameParts[hostnameParts.length - 2];
+        const domainComparable = this.normalizeComparableText(domainLabel);
+        if (domainComparable && titleComparable === domainComparable) {
+          return true;
+        }
+      }
+
+      // Very short titles are often placeholders and not useful to users.
+      if (normalizedTitle.length < 3) {
+        return true;
+      }
+    } catch {
+      // Ignore parse errors and keep the title.
+    }
+
+    return false;
+  }
+
+  private getDisplayTitle(link: { title?: string; url: string }): string {
+    if (!link.title || link.title === link.url) {
+      return this.unextractableTitleText;
+    }
+
+    if (this.isGenericOrUnhelpfulTitle(link.title, link.url)) {
+      return this.unextractableTitleText;
+    }
+
+    return link.title;
+  }
+
   private getButtonLabel(link: { title?: string; url: string }): string {
     const maxLength = 40;
-    let source = link.title?.trim();
+    let source = this.getDisplayTitle(link);
 
-    if (!source || source === link.url) {
+    if (source === this.unextractableTitleText) {
       try {
         source = new URL(link.url).hostname.replace(/^www\./, '');
       } catch {
@@ -56,14 +131,10 @@ export class ListCommand {
     const messageLines = links.map((link, index) => {
       const seq = index + 1;
       const status = link.isRead ? '✅' : '📌';
-      const title = link.title || link.url;
+      const title = this.getDisplayTitle(link);
       const url = link.url;
 
-      if (link.title && link.title !== link.url) {
-        return `${seq}. (ID: ${link.id}) ${title}\n   ${url} ${status}`;
-      } else {
-        return `${seq}. (ID: ${link.id}) ${title} ${status}`;
-      }
+      return `${seq}. (ID: ${link.id}) ${title}\n   ${url} ${status}`;
     });
     const message = `Saved links (${links.length}):\n\n${messageLines.join('\n\n')}`;
 
