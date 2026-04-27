@@ -314,6 +314,24 @@ export class SettingsAction {
     await this.botService.showSettings(ctx, user);
   }
 
+  @Action('settings_toggle_privacy')
+  async handleTogglePrivacy(@Ctx() ctx: Context) {
+    if (!ctx.from || !ctx.callbackQuery) return;
+    const user = await this.usersService.findByTelegramId(ctx.from.id);
+    if (!user) return;
+
+    const settings = await this.userSettingsService.getSettingsForUser(user);
+    const newPrivacy = !settings.isPrivate;
+
+    await this.userSettingsService.updateSettings(user, {
+      isPrivate: newPrivacy,
+    });
+
+    const status = newPrivacy ? 'Private 🔒' : 'Public 🌍';
+    await ctx.answerCbQuery(`Privacy status updated to ${status}`);
+    await this.botService.showSettings(ctx, user);
+  }
+
   @Action('setup_start')
   async handleSetupStart(@Ctx() ctx: Context) {
     if (!ctx.from || !ctx.callbackQuery) return;

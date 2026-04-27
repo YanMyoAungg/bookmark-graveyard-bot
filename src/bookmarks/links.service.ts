@@ -94,11 +94,53 @@ export class LinksService {
     return allLinks;
   }
 
+  private readonly BANNED_DOMAINS = new Set([
+    'bit.ly', // Often used for malicious redirects if unknown
+    'tinyurl.com',
+    'goo.gl',
+    'ow.ly',
+    't.co',
+    // Add known malicious domains here
+  ]);
+
+  private isMalicious(url: string): boolean {
+    try {
+      const parsed = new URL(url);
+      const hostname = parsed.hostname.toLowerCase().replace(/^www\./, '');
+      if (this.BANNED_DOMAINS.has(hostname)) {
+        return true;
+      }
+      // Check for suspicious patterns (malicious or adult content)
+      const suspiciousPatterns = [
+        /phishing/i,
+        /malware/i,
+        /scam/i,
+        /porn/i,
+        /sex/i,
+        /xvid/i,
+        /pornhub/i,
+        /hentai/i,
+        /nudity/i,
+      ];
+      if (suspiciousPatterns.some((pattern) => pattern.test(url))) {
+        return true;
+      }
+      return false;
+    } catch {
+      return true; // If we can't parse it, consider it unsafe
+    }
+  }
+
   async create(
     url: string,
     user: User,
     title?: string,
   ): Promise<{ link: Link; isNew: boolean; restored: boolean }> {
+    // Check for malicious links
+    if (this.isMalicious(url)) {
+      throw new Error('MALICIOUS_LINK');
+    }
+
     // Normalize the URL once at the very top of the create method
     const normalizedUrl = this.basicNormalizeUrl(url);
     this.logger.log(

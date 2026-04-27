@@ -41,7 +41,7 @@ export class TagsCommand {
 
     const message =
       `🏷️ **Your Tags**\n\n${tagLines.join('\n')}\n\n` +
-      `Use /links <tag> to view links in a tag.`;
+      `Use /links <tag> to view links in a tag (e.g., /links youtube).`;
 
     await ctx.reply(message, { parse_mode: 'Markdown' });
   }

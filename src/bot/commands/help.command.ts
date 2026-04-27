@@ -7,18 +7,21 @@ export class HelpCommand {
   async help(@Ctx() ctx: Context) {
     await ctx.reply(
       `📖 **How to use Bookmark Graveyard**\n\n` +
-        `The internet is a vast graveyard of links we save but never revisit. I'm here to bring those forgotten bookmarks back to life.\n\n` +
-        `**1. Saving Links**\n` +
-        `Send me any URL. I'll fetch the title and store it safely.\n\n` +
-        `**2. Reminders**\n` +
-        `I'll send you periodic reminders of your unread links based on your /settings. Revisit them to keep your knowledge fresh!\n\n` +
+        `Welcome to **Bookmark Graveyard**! 📚💀\n\n` +
+        `I am your Link Keeper. I help you finish reading the links you save instead of letting them die in a "Saved" list.\n\n` +
+        `🔥 **Daily Discovery:** I send a list of top trending links to everyone at **10:00 AM** and **08:00 PM** (MMT). Your links only appear here if you set your privacy to Public in /settings.\n\n` +
+        `**How to use:**\n` +
+        `Simply send me any link (Facebook post, article, YouTube video), and I will add it to your graveyard. I will then remind you to read it based on your settings.\n\n` +
         `**3. Core Actions**\n` +
         `✅ **Mark as Read**: Moves the link to your archive. No more reminders, but still searchable.\n` +
         `🗑️ **Delete**: Removes the link from your account permanently.\n\n` +
         `**Commands:**\n` +
-        `/list - Show your saved links (use /list unread for filter)\n` +
-        `/tags - View links organized by domain\n` +
-        `/settings - Configure reminder frequency & time\n` +
+        `/list - Show your saved links\n` +
+        `/tags - View links by domain\n` +
+        `/links <tag> - View links in a tag (e.g., /links youtube)\n` +
+        `/read <id> - Mark as read (e.g., /read 1)\n` +
+        `/delete <id> - Delete link (e.g., /delete 1)\n` +
+        `/settings - Configure reminder frequency, time and limit\n` +
         `/support - View developer portfolio\n` +
         `/help - Show this guide`,
       { parse_mode: 'Markdown' },

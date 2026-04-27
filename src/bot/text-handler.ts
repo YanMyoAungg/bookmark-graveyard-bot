@@ -105,7 +105,16 @@ export class TextHandler {
       const keyboard = Markup.inlineKeyboard([buttons]);
       await ctx.reply(message, keyboard);
     } catch (error) {
-      if (error instanceof Error && error.message === 'DUPLICATE_UNREAD_LINK') {
+      if (error instanceof Error && error.message === 'MALICIOUS_LINK') {
+        await ctx.reply(
+          `🛡️ **Safety Blocked**\n\n` +
+            `This link appears to be malicious, inappropriate, or uses a restricted shortener. For the safety of our community, I cannot save this link.`,
+          { parse_mode: 'Markdown' },
+        );
+      } else if (
+        error instanceof Error &&
+        error.message === 'DUPLICATE_UNREAD_LINK'
+      ) {
         await ctx.reply(
           `You already have this link saved and unread! Use /list to see your saved links.`,
         );

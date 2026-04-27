@@ -42,6 +42,12 @@ export class UserSettings {
 
   @Column({
     type: 'boolean',
+    default: true,
+  })
+  isPrivate: boolean;
+
+  @Column({
+    type: 'boolean',
     default: false,
   })
   isSetupComplete: boolean;

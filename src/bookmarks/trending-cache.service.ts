@@ -4,6 +4,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TrendingCache } from '../entities/trending-cache.entity';
 import { Link } from '../entities/link.entity';
+import { UsersService } from './users.service';
+import { InjectBot } from 'nestjs-telegraf';
+import { Telegraf } from 'telegraf';
 
 @Injectable()
 export class TrendingCacheService {
@@ -14,7 +17,43 @@ export class TrendingCacheService {
     private trendingCacheRepository: Repository<TrendingCache>,
     @InjectRepository(Link)
     private linksRepository: Repository<Link>,
+    private readonly usersService: UsersService,
+    @InjectBot()
+    private readonly bot: Telegraf,
   ) {}
+
+  @Cron('30 3,13 * * *') // 03:30 and 13:30 UTC = 10:00 AM and 08:00 PM MMT
+  async broadcastTrending() {
+    this.logger.log('Broadcasting trending links to all users...');
+    const trending = await this.getTrending();
+    if (trending.length === 0) return;
+
+    const lines = trending.map((item, i) => {
+      const title = item.title || item.url;
+      return `${i + 1}. [${title}](${item.url}) (${item.saveCount} saves)`;
+    });
+
+    const message =
+      `🔥 *Trending Today*\n\n` +
+      `${lines.join('\n\n')}\n\n` +
+      `_Daily discovery from the Link Keeper community!_`;
+
+    const users = await this.usersService.findAll();
+    for (const user of users) {
+      try {
+        await this.bot.telegram.sendMessage(user.telegramId, message, {
+          parse_mode: 'Markdown',
+          link_preview_options: { is_disabled: true },
+        });
+        // Sleep briefly to avoid rate limits
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      } catch (error) {
+        this.logger.warn(
+          `Failed to send trending to user ${user.id}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
+  }
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async refreshTrending() {
@@ -34,11 +73,14 @@ export class TrendingCacheService {
 
       const trending = await this.linksRepository
         .createQueryBuilder('link')
+        .leftJoin('link.user', 'user')
+        .leftJoin('user.settings', 'settings')
         .select('MIN(link.id)', 'representativeId')
         .addSelect('link.url', 'url')
         .addSelect('link.title', 'title')
         .addSelect('COUNT(*)', 'count')
         .where('link.createdAt >= :since', { since: sevenDaysAgo })
+        .andWhere('settings.isPrivate = :isPrivate', { isPrivate: false })
         .groupBy('link.url, link.title')
         .orderBy('count', 'DESC')
         .limit(10)

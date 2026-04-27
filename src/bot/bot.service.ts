@@ -21,28 +21,40 @@ export class BotService {
       settings.reminderTime,
     );
 
+    const privacyText = settings.isPrivate
+      ? '🔒 Private (Not shared in Trending)'
+      : '🌍 Public (Shared in Trending)';
+
     let message = '';
     if (!settings.isSetupComplete) {
       message =
         `⚙️ **First-time Setup**\n\n` +
-        `Please configure your reminder preferences:\n\n` +
+        `Please configure your preferences:\n\n` +
         `**Frequency:** ${frequencyText}\n` +
         `**Time (Myanmar Time):** ${mmtTime}\n` +
-        `**Links per reminder:** ${settings.reminderLimit}\n\n` +
-        `Click a button to change a setting. Time selection uses guided hour/minute buttons.`;
+        `**Links per reminder:** ${settings.reminderLimit}\n` +
+        `**Privacy:** ${privacyText}\n\n` +
+        `💡 *Tip: Making your bookmarks Public helps the community by populating the "Trending" list with useful resources!*`;
     } else {
       message =
-        `⚙️ **Your Reminder Settings**\n\n` +
+        `⚙️ **Your Settings**\n\n` +
         `**Frequency:** ${frequencyText}\n` +
         `**Time (Myanmar Time):** ${mmtTime}\n` +
-        `**Links per reminder:** ${settings.reminderLimit}\n\n` +
-        `Click a button to change a setting. Time selection uses guided hour/minute buttons.`;
+        `**Links per reminder:** ${settings.reminderLimit}\n` +
+        `**Privacy:** ${privacyText}\n\n` +
+        `💡 *Tip: Public mode helps others discover useful links through trending stats. Private mode keeps your bookmarks completely hidden from global .*`;
     }
 
     const keyboardRows = [
       [Markup.button.callback('🔄 Change Frequency', 'settings_frequency')],
       [Markup.button.callback('⏰ Change Time', 'settings_time')],
       [Markup.button.callback('🔢 Change Links Limit', 'settings_limit')],
+      [
+        Markup.button.callback(
+          settings.isPrivate ? '🌍 Make Public' : '🔒 Make Private',
+          'settings_toggle_privacy',
+        ),
+      ],
     ];
 
     if (!settings.isSetupComplete) {

@@ -47,6 +47,7 @@ export class UserSettingsService {
       reminderTime: string;
       reminderLimit: number;
       isSetupComplete: boolean;
+      isPrivate: boolean;
       pendingAction: 'frequency' | 'time' | 'limit' | null;
     }>,
   ): Promise<UserSettings> {
