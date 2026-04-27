@@ -11,9 +11,10 @@ export class SupportCommand {
     }
     await ctx.reply(
       `Thanks for using Bookmark Graveyard! 🚀\n\n` +
-        `If you find this tool useful and are looking for a developer for your next project, I'm currently available for hire! You can check out my portfolio/CV here:\n\n` +
-        `🔗 [My Portfolio](https://drive.google.com/file/d/1NjPDU77feiiTgCA6ISbpzPg7qfhqneQZ/view)\n\n` +
-        `Feel free to reach out to me for collaborations or job opportunities. Your interest means a lot! 🙏`,
+        `This bot is open-source and developed with passion. If you'd like to collaborate, hire me, or just say hi, feel free to connect with me!\n\n` +
+        `🔗 [GitHub Profile](https://github.com/YanMyoAungg)\n` +
+        `🔗 [LinkedIn Profile](https://www.linkedin.com/in/yan-myo-aung-3111b830a?utm_source=share_via&utm_content=profile&utm_medium=member_ios)\n\n` +
+        `Don't forget to star the repository if you like it! 🙏`,
       { parse_mode: 'Markdown' },
     );
   }

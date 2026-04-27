@@ -1,45 +1,50 @@
-# Bookmark Graveyard
+# Bookmark Graveyard 📚💀
 
-A Telegram bot that helps you revisit saved links instead of letting them disappear into your "saved for later" pile.
+> "The internet is a vast graveyard of links we save but never revisit."
 
-Open source, community-driven, and free forever.
+**Bookmark Graveyard** is an open-source Telegram bot designed to solve the "Saved but never read" problem. It acts as your personal **Link Keeper**, ensuring that the useful articles, Facebook posts, and YouTube videos you find actually get consumed instead of disappearing into a digital drawer forever.
 
-## Why This Exists
+[![GitHub stars](https://img.shields.io/github/stars/YanMyoAungg/bookmark-graveyard-bot?style=social)](https://github.com/YanMyoAungg/bookmark-graveyard-bot)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Most people save useful content and rarely come back to it. Bookmark Graveyard solves this by:
+## 🌟 Why This Exists
 
-- saving links directly from chat
-- reminding you at your preferred schedule
-- giving quick actions to mark links as read or delete them
+We all do it: you see a brilliant post on social media or a great tutorial, you click "Save," and you forget about it. **Bookmark Graveyard** brings those links back to life. It’s built for the community, by developers who want to move from "collecting links" to "consuming knowledge."
 
-## Features
+## ✨ Features
 
-- Save any URL by sending it to the bot
-- Automatic title extraction for better readability
-- Duplicate-aware saving (including restore-from-read behavior)
-- Per-user reminder settings (`daily`, `weekly`, `biweekly`, `monthly`)
-- Reminder time customization (stored as UTC, configured in Myanmar time UX)
-- Smart list UI with inline "Mark as Read" actions
-- Optional auto-tagging by domain and tag-based browsing
-- Trending command for most-saved links
+- **📥 Seamless Saving**: Send any URL directly to the bot from your mobile or desktop.
+- **⏰ Personalized Reminders**: Configure your own schedule (`daily`, `weekly`, etc.) and time in **Myanmar Time (MMT)**.
+- **🔥 Daily Discovery**: Curated **Trending Links** broadcasted twice daily (10:00 AM & 08:00 PM MMT).
+- **🔒 Privacy First**: All links are **Private by default**. You choose whether to share your knowledge with the community trending list.
+- **🛡️ Security**: Built-in protection against malicious links, phishing, and inappropriate content.
+- **🏷️ Smart Organization**: Automatic domain-based tagging and manual tag management.
+- **📊 Reading Stats**: Track your personal reading progress and graveyard activity.
 
-## Tech Stack
+## 🛠️ Tech Stack
 
-- NestJS + TypeScript
-- Telegraf / `nestjs-telegraf`
-- TypeORM
+- **Framework**: [NestJS](https://nestjs.com/) (Node.js)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Bot Engine**: [Telegraf](https://telegraf.js.org/) / `nestjs-telegraf`
+- **Database**: [PostgreSQL](https://www.postgresql.org/) with [TypeORM](https://typeorm.io/)
+- **Scheduling**: `@nestjs/schedule` (Cron jobs)
+- **Deployment**: Configured for [Render](https://render.com/) with Blueprint support.
+
+## 🚀 Quick Start
+
+### 1) Prerequisites
+
+- Node.js (v20+)
 - PostgreSQL
-- Cron jobs via `@nestjs/schedule`
+- pnpm
 
-## Quick Start
+### 2) Create your Telegram Bot
 
-### 1) Create your Telegram bot
+1. Open [@BotFather](https://t.me/botfather) on Telegram.
+2. Run `/newbot` and follow the instructions.
+3. Copy your **API Token**.
 
-1. Open [@BotFather](https://t.me/botfather)
-2. Run `/newbot`
-3. Copy your bot token
-
-### 2) Configure environment
+### 3) Environment Configuration
 
 ```bash
 cp .env.example .env
@@ -47,98 +52,39 @@ cp .env.example .env
 
 Required values in `.env`:
 
-- `TELEGRAM_BOT_TOKEN`
-- `DATABASE_URL`
+- `TELEGRAM_BOT_TOKEN`: Your bot token.
+- `DATABASE_URL`: Your PostgreSQL connection string.
 
-Optional:
-
-- `DB_SYNCHRONIZE` (defaults to `true` outside production)
-- `NODE_ENV`
-- `SERVICE_URL` (used by keep-alive ping job)
-
-### 3) Install and run
+### 4) Installation & Development
 
 ```bash
 pnpm install
 pnpm run start:dev
 ```
 
-Production:
+## 📖 Commands
 
-```bash
-pnpm run build
-pnpm run start:prod
-```
+- `/start` - Launch the bot and run the interactive setup.
+- `/help` - Show the comprehensive user guide.
+- `/list` - View your saved links (with quick action buttons).
+- `/settings` - Configure frequency, time, limit, and privacy.
+- `/trending` - Discover the most saved links in the community.
+- `/tags` - Browse your bookmarks by domain/tag.
+- `/stats` - View your personal reading activity.
+- `/deduplicate` - Clean up your graveyard by removing identical links.
 
-## Commands
+## 🤝 Contributing & Support
 
-- `/start` - greet user and run first-time setup
-- `/help` - show help
-- `/list` - list latest saved links
-- `/list unread` - list unread links only
-- `/read <id>` - mark one link as read
-- `/delete <id>` - delete one link
-- `/settings` - configure reminder frequency, time, and reminder size
-- `/tags` - show tag usage
-- `/linksbytag <tag>` - list links under a tag
-- `/stats` - show personal reading activity stats
-- `/trending` - show top saved links this week
-- `/deduplicate` - remove duplicate links for current user
-- `/support` - donation / support info
+This project is open-source and free forever!
 
-## Environment Variables
+- **Give us a ⭐**: If you find this bot useful, please star the repository! It helps more people discover the project.
+- **Pull Requests**: PRs are welcome! Whether it's a bug fix, a new feature, or a documentation improvement.
+- **Support**: Check out the developer's portfolio via the `/support` command in the bot.
 
-| Variable | Description | Required |
-| --- | --- | --- |
-| `TELEGRAM_BOT_TOKEN` | Telegram bot token from BotFather | Yes |
-| `DATABASE_URL` | PostgreSQL connection string | Yes |
-| `DB_SYNCHRONIZE` | TypeORM auto schema sync (`true`/`false`) | No |
-| `NODE_ENV` | Runtime environment (`development`/`production`) | No |
-| `SERVICE_URL` | Public service URL for scheduled self-ping | No |
+## 📜 License
 
-Notes:
+Distributed under the MIT License. See `LICENSE` for more information.
 
-- Reminder preferences are stored per user and managed via `/settings`.
-- Legacy `REMINDER_CRON` and `REMINDER_LIMIT` env vars are no longer used.
+---
 
-## Deployment (Render)
-
-This repo includes `render.yaml` for Blueprint deployments.
-
-Minimum Render env vars:
-
-- `TELEGRAM_BOT_TOKEN`
-- `DATABASE_URL`
-- `NODE_ENV=production`
-
-After deploy:
-
-- verify `/healthz` endpoint responds
-- verify bot can poll and receive updates
-
-## Development
-
-```bash
-pnpm run lint
-pnpm run test
-pnpm run build
-```
-
-## Privacy
-
-- Stores Telegram user ID and basic profile fields (username, first/last name)
-- Stores links and related metadata (title, read state, tags, interactions)
-- No analytics SDKs or ad tracking built into this codebase
-
-## Contributing
-
-PRs are welcome. Good first contributions:
-
-- command UX improvements
-- reminder reliability improvements
-- tests for command handlers and services
-- docs and localization improvements
-
-## License
-
-MIT - see [LICENSE](LICENSE).
+Built with ❤️ for the community. [Try the bot on Telegram!](https://t.me/bookmark_graveyard_bot)

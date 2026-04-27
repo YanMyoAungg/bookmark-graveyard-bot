@@ -35,7 +35,7 @@ export class StartCommand {
         `2. I'll store it safely in your graveyard.\n` +
         `3. I'll send you periodic reminders so you actually **finish reading** what you saved.\n\n` +
         `🔥 **Bonus:** Every day at **10:00 AM** and **08:00 PM** (MMT), I'll broadcast the top trending links saved by the community!\n\n` +
-        `You can use /help to see all commands and /settings at any time to change your frequency, reminder time, or link limit.\n\n` +
+        `You can use /help to see all commands and /settings at any time to change your frequency, reminder time, link limit and privacy.\n\n` +
         `Before we begin, let's set up your initial reminder preferences:`;
       await ctx.reply(welcomeMsg, {
         parse_mode: 'Markdown',
@@ -56,7 +56,7 @@ export class StartCommand {
           `/links <tag> - View links in a tag (e.g., /links youtube)\n` +
           `/read <id> - Mark as read (e.g., /read 1)\n` +
           `/delete <id> - Delete link (e.g., /delete 1)\n` +
-          `/settings - Configure reminder frequency, time and limit\n` +
+          `/settings - Configure reminder frequency, time, limit and privacy\n` +
           `/support - View developer portfolio\n` +
           `/help - Show this guide`,
         { parse_mode: 'Markdown' },

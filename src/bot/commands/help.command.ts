@@ -21,7 +21,7 @@ export class HelpCommand {
         `/links <tag> - View links in a tag (e.g., /links youtube)\n` +
         `/read <id> - Mark as read (e.g., /read 1)\n` +
         `/delete <id> - Delete link (e.g., /delete 1)\n` +
-        `/settings - Configure reminder frequency, time and limit\n` +
+        `/settings - Configure reminder frequency, time, limit and privacy\n` +
         `/support - View developer portfolio\n` +
         `/help - Show this guide`,
       { parse_mode: 'Markdown' },
