@@ -17,7 +17,14 @@ export class User {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ unique: true })
+  @Column({
+    type: 'bigint',
+    unique: true,
+    transformer: {
+      to: (value: number) => value,
+      from: (value: string) => parseInt(value, 10),
+    },
+  })
   telegramId: number;
 
   @Column({ nullable: true })
