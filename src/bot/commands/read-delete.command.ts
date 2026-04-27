@@ -40,7 +40,9 @@ export class ReadDeleteCommand {
     }
 
     await this.linksService.markAsRead(id);
-    await ctx.reply(`Link ${id} marked as read ✅`);
+    await ctx.reply(
+      `Link #${id} marked as read ✅\n\nIt has been moved to your archive and won't appear in future reminders. You can still find it in your /list.`,
+    );
   }
 
   @Command('delete')
@@ -74,7 +76,9 @@ export class ReadDeleteCommand {
 
     const deleted = await this.linksService.delete(id);
     if (deleted) {
-      await ctx.reply(`Link ${id} deleted permanently. 🗑️`);
+      await ctx.reply(
+        `Link #${id} deleted permanently 🗑️\n\nIt has been completely removed from your graveyard and won't be reminded ever again.`,
+      );
     } else {
       await ctx.reply('Failed to delete link.');
     }

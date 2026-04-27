@@ -27,36 +27,32 @@ export class StartCommand {
 
     if (!settings.isSetupComplete) {
       const welcomeMsg =
-        `Welcome to Bookmark Graveyard! 📚\n\n` +
-        `I'll help you revisit saved content instead of forgetting it.\n\n` +
-        `Before we begin, let's set up your reminder preferences. ` +
-        `You can customize:\n` +
-        `• Reminder frequency (daily, weekly, etc.)\n` +
-        `• Time in UTC\n` +
-        `• Number of links per reminder\n\n` +
-        `Click below to configure your reminders:`;
-      await ctx.reply(
-        welcomeMsg,
-        Markup.inlineKeyboard([
+        `Welcome to **Bookmark Graveyard**! 📚💀\n\n` +
+        `The internet is a vast graveyard of links we save but never revisit. I'm here to act as your **Link Keeper**—bringing those forgotten bookmarks back to life.\n\n` +
+        `**How it works:**\n` +
+        `1. Send me any link you want to remember.\n` +
+        `2. I'll store it safely in your graveyard.\n` +
+        `3. I'll send you periodic reminders to revisit them.\n\n` +
+        `Before we begin, let's set up your reminder preferences:`;
+      await ctx.reply(welcomeMsg, {
+        parse_mode: 'Markdown',
+        ...Markup.inlineKeyboard([
           [Markup.button.callback('⚙️ Configure Reminders', 'setup_start')],
         ]),
-      );
+      });
     } else {
       await ctx.reply(
-        `Welcome to Bookmark Graveyard! 📚\n\n` +
-          `I'll help you revisit saved content instead of forgetting it.\n\n` +
-          `Send me any link (Facebook post, article, etc.) and I'll save it.\n` +
-          `I'll fetch the page title automatically for easier recognition.\n` +
-          `I'll show the link ID with inline buttons to mark as read or delete.\n` +
-          `I'll send you reminders based on your preferences.\n` +
-          `Send a previously read link again to restore it to your reminders.\n\n` +
-          `Commands:\n` +
-          `/list - Show your saved links\n` +
-          `/read <id> - Mark a link as read\n` +
-          `/delete <id> - Delete a link permanently\n` +
-          `/settings - Configure reminder preferences\n` +
-          `/support - Support the project\n` +
-          `/help - Show this help message`,
+        `Welcome back to your **Bookmark Graveyard**! 📚\n\n` +
+          `Your graveyard is ready. Send me any link (Facebook post, article, video) and I'll keep it safe until it's time for a reminder.\n\n` +
+          `**Core Actions:**\n` +
+          `✅ **Mark as Read**: Link moves to your archive. No more reminders, but still in your history.\n` +
+          `🗑️ **Delete**: Link is removed from the graveyard permanently.\n\n` +
+          `**Commands:**\n` +
+          `/list - View your saved links\n` +
+          `/tags - View links organized by domain\n` +
+          `/settings - Change reminder frequency\n` +
+          `/help - Detailed guide`,
+        { parse_mode: 'Markdown' },
       );
     }
   }

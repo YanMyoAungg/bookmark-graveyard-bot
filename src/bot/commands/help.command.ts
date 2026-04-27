@@ -7,21 +7,20 @@ export class HelpCommand {
   async help(@Ctx() ctx: Context) {
     await ctx.reply(
       `📖 **How to use Bookmark Graveyard**\n\n` +
-        `1. Send me any URL (Facebook, article, video, etc.)\n` +
-        `2. I'll fetch the page title automatically and save it with the link\n` +
-        `3. I'll show you the link ID with buttons to mark as read or delete\n` +
-        `4. I'll send you reminders based on your preferences (customizable via /settings)\n` +
-        `5. Send a previously read link again to restore it to your reminders\n` +
-        `6. Use /list to see all saved links with inline buttons\n` +
-        `7. Use /read <id> to mark a link as read (or click inline buttons)\n\n` +
-        `Commands:\n` +
-        `/start - Welcome message\n` +
-        `/list - Show your saved links (add "unread" to filter)\n` +
-        `/read <id> - Mark link as read\n` +
-        `/delete <id> - Delete a link permanently\n` +
-        `/settings - Configure reminder frequency, time, and links per reminder\n` +
-        `/support - Support me\n` +
-        `/help - helps`,
+        `The internet is a vast graveyard of links we save but never revisit. I'm here to bring those forgotten bookmarks back to life.\n\n` +
+        `**1. Saving Links**\n` +
+        `Send me any URL. I'll fetch the title and store it safely.\n\n` +
+        `**2. Reminders**\n` +
+        `I'll send you periodic reminders of your unread links based on your /settings. Revisit them to keep your knowledge fresh!\n\n` +
+        `**3. Core Actions**\n` +
+        `✅ **Mark as Read**: Moves the link to your archive. No more reminders, but still searchable.\n` +
+        `🗑️ **Delete**: Removes the link from your account permanently.\n\n` +
+        `**Commands:**\n` +
+        `/list - Show your saved links (use /list unread for filter)\n` +
+        `/tags - View links organized by domain\n` +
+        `/settings - Configure reminder frequency & time\n` +
+        `/support - View developer portfolio\n` +
+        `/help - Show this guide`,
       { parse_mode: 'Markdown' },
     );
   }

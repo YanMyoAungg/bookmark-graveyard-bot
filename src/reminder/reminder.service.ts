@@ -70,35 +70,39 @@ export class ReminderService {
     }
 
     const message =
-      `📚 Reminder: Here are ${unreadLinks.length} saved links to revisit:\n\n` +
+      `🔔 **Time to revisit your graveyard!**\n\n` +
+      `Here are ${unreadLinks.length} links waiting for you. Revisit them to keep your knowledge alive, or mark them as read to archive them.\n\n` +
       unreadLinks
         .map((link, index) => {
           const title = link.title || link.url;
-          if (link.title && link.title !== link.url) {
-            return `${index + 1}. ${title}\n${link.url}`;
-          } else {
-            return `${index + 1}. ${link.url}`;
-          }
+          const displayTitle =
+            link.title && link.title !== link.url
+              ? `**${title}**`
+              : `🔗 Link #${link.id}`;
+          return `${index + 1}. ${displayTitle}\n${link.url}`;
         })
         .join('\n\n') +
-      `\n\nClick the buttons below to mark as read.`;
+      `\n\n✅ **Mark as Read**: Moves to archive, stops reminders.\n` +
+      `🗑️ **Delete**: Use /delete <id> to remove permanently.`;
 
     // Create inline buttons: [ ✅ 1 ] [ ✅ 2 ] ...
-    type ButtonType = ReturnType<typeof Markup.button.callback>;
-    const buttons: ButtonType[] = unreadLinks.map((link, index) =>
+    const buttons = unreadLinks.map((link, index) =>
       Markup.button.callback(`✅ ${index + 1}`, `mark_read_${link.id}`),
     );
 
-    // Group buttons into rows of up to 3
-    const keyboardRows: ButtonType[][] = [];
-    for (let i = 0; i < buttons.length; i += 3) {
-      keyboardRows.push(buttons.slice(i, i + 3));
+    // Group buttons into rows of up to 5 (reminders can have up to 10 links)
+    const keyboardRows: any[][] = [];
+    for (let i = 0; i < buttons.length; i += 5) {
+      keyboardRows.push(buttons.slice(i, i + 5));
     }
 
     const keyboard = Markup.inlineKeyboard(keyboardRows);
 
     try {
-      await this.bot.telegram.sendMessage(user.telegramId, message, keyboard);
+      await this.bot.telegram.sendMessage(user.telegramId, message, {
+        parse_mode: 'Markdown',
+        ...keyboard,
+      });
       this.logger.log(`Reminder sent to user ${user.telegramId}`);
     } catch (error) {
       this.logger.error(

@@ -26,7 +26,10 @@ export class TagsCommand {
 
     if (tags.length === 0) {
       await ctx.reply(
-        'No tags yet. Save some links and they will be auto-tagged based on the domain!',
+        'No tags yet! 🏷️\n\n' +
+          'Save some links and I will automatically tag them based on their domain.\n' +
+          'Example: a link from `youtube.com` will be tagged as `#youtube`.',
+        { parse_mode: 'Markdown' },
       );
       return;
     }
