@@ -2,12 +2,14 @@ import { Update, Command, Ctx } from 'nestjs-telegraf';
 import { Context } from 'telegraf';
 import { UsersService } from '../../bookmarks/users.service';
 import { LinksService } from '../../bookmarks/links.service';
+import { TrendingCacheService } from '../../bookmarks/trending-cache.service';
 
 @Update()
 export class ReadDeleteCommand {
   constructor(
     private readonly usersService: UsersService,
     private readonly linksService: LinksService,
+    private readonly trendingCacheService: TrendingCacheService,
   ) {}
 
   @Command('read')
@@ -79,6 +81,14 @@ export class ReadDeleteCommand {
       await ctx.reply(
         `Link #${id} deleted permanently 🗑️\n\nIt has been completely removed from your graveyard and won't be reminded ever again.`,
       );
+      this.trendingCacheService
+        .refreshTrending()
+        .catch((err) =>
+          console.error(
+            'Failed to refresh trending cache on delete command:',
+            err,
+          ),
+        );
     } else {
       await ctx.reply('Failed to delete link.');
     }

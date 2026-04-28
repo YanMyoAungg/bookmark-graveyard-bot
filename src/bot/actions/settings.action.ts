@@ -3,6 +3,7 @@ import { Context, Markup } from 'telegraf';
 import { UsersService } from '../../bookmarks/users.service';
 import { UserSettingsService } from '../../bookmarks/user-settings.service';
 import { BotService } from '../bot.service';
+import { TrendingCacheService } from '../../bookmarks/trending-cache.service';
 
 @Update()
 export class SettingsAction {
@@ -115,6 +116,7 @@ export class SettingsAction {
     private readonly usersService: UsersService,
     private readonly userSettingsService: UserSettingsService,
     private readonly botService: BotService,
+    private readonly trendingCacheService: TrendingCacheService,
   ) {}
 
   @Action('settings_frequency')
@@ -326,6 +328,16 @@ export class SettingsAction {
     await this.userSettingsService.updateSettings(user, {
       isPrivate: newPrivacy,
     });
+
+    // Refresh trending cache immediately to reflect privacy changes
+    this.trendingCacheService
+      .refreshTrending()
+      .catch((err) =>
+        console.error(
+          'Failed to refresh trending cache on privacy toggle:',
+          err,
+        ),
+      );
 
     const status = newPrivacy ? 'Private 🔒' : 'Public 🌍';
     await ctx.answerCbQuery(`Privacy status updated to ${status}`);

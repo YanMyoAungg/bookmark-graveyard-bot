@@ -3,6 +3,7 @@ import { Context, Markup } from 'telegraf';
 import { UsersService } from '../../bookmarks/users.service';
 import { LinksService } from '../../bookmarks/links.service';
 import { LinkInteractionsService } from '../../bookmarks/link-interactions.service';
+import { TrendingCacheService } from '../../bookmarks/trending-cache.service';
 
 @Update()
 export class DeleteAction {
@@ -10,6 +11,7 @@ export class DeleteAction {
     private readonly usersService: UsersService,
     private readonly linksService: LinksService,
     private readonly linkInteractionsService: LinkInteractionsService,
+    private readonly trendingCacheService: TrendingCacheService,
   ) {}
 
   @Action(/^delete_(\d+)$/)
@@ -43,6 +45,12 @@ export class DeleteAction {
           ...Markup.inlineKeyboard([]),
         });
       }
+
+      this.trendingCacheService
+        .refreshTrending()
+        .catch((err) =>
+          console.error('Failed to refresh trending cache on delete:', err),
+        );
     } else {
       await ctx.answerCbQuery('Failed to delete link.');
     }

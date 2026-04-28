@@ -122,7 +122,7 @@ export class TrendingCacheService {
       where: { period: 'weekly' },
       order: { saveCount: 'DESC' },
       relations: ['link'],
-      take: 10,
+      take: 5,
     });
 
     return cached.map((c) => ({
